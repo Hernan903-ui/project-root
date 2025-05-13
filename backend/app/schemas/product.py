@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 from typing import Optional, List
 from datetime import datetime
+from .category import Category 
 
 class ProductBase(BaseModel):
     name: str

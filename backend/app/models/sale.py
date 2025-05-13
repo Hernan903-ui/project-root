@@ -15,14 +15,14 @@ class Sale(Base):
     __tablename__ = "sales"
 
     id = Column(Integer, primary_key=True, index=True)
-    invoice_number = Column(String, unique=True, index=True)
+    invoice_number = Column(String(length=50), unique=True, index=True)
     customer_id = Column(Integer, ForeignKey("customers.id"), nullable=True)
     total_amount = Column(Float, nullable=False)
     tax_amount = Column(Float, default=0.0)
     discount_amount = Column(Float, default=0.0)
-    payment_method = Column(String, nullable=False)
-    payment_status = Column(String, default="paid")
-    notes = Column(String, nullable=True)
+    payment_method = Column(String(length=50), nullable=False)
+    payment_status = Column(String(length=50), default="paid")
+    notes = Column(String(length=250), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     created_by = Column(Integer, ForeignKey("users.id"))
 

@@ -7,10 +7,10 @@ class Product(Base):
     __tablename__ = "products"
 
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, index=True)
-    description = Column(String, nullable=True)
-    sku = Column(String, unique=True, index=True)
-    barcode = Column(String, unique=True, nullable=True, index=True)
+    name = Column(String(length=50), index=True)
+    description = Column(String(length=250), nullable=True)
+    sku = Column(String(length=250), unique=True, index=True)
+    barcode = Column(String(length=50), unique=True, nullable=True, index=True)
     price = Column(Float)
     cost_price = Column(Float)
     tax_rate = Column(Float, default=0.0)
