@@ -1,4 +1,4 @@
-import axios from '../api/axios';
+import axios from './axios';
 
 export const getInventoryMovements = async (params = {}) => {
   const { 

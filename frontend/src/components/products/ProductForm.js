@@ -23,7 +23,7 @@ import { useForm, Controller } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
 import { useSnackbar } from 'notistack';
-import { useQuery, useMutation, useQueryClient } from 'react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import SaveIcon from '@mui/icons-material/Save';
 import CancelIcon from '@mui/icons-material/Cancel';
 import AddIcon from '@mui/icons-material/Add';

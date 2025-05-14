@@ -13,7 +13,7 @@ import {
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
-import { useQuery, useMutation, useQueryClient } from 'react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSnackbar } from 'notistack';
 
 import ProductTable from '../components/products/ProductTable';

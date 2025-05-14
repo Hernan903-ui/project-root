@@ -18,7 +18,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import RestoreIcon from '@mui/icons-material/Restore';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import { useQuery, useMutation, useQueryClient } from 'react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSnackbar } from 'notistack';
 
 import { getProductById, updateProduct } from '../api/productApi';

@@ -1,6 +1,7 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from '../../api/axios';
-import jwt_decode from 'jwt-decode';
+import { jwtDecode } from 'jwt-decode';
+
 
 // Verificar si hay un token almacenado al iniciar
 const token = localStorage.getItem('token');
@@ -8,7 +9,7 @@ let initialUser = null;
 
 if (token) {
   try {
-    const decoded = jwt_decode(token);
+    const decoded = jwtDecode(token);
     // Verificar si el token no ha expirado
     if (decoded.exp * 1000 > Date.now()) {
       initialUser = { id: decoded.sub };
@@ -45,7 +46,7 @@ export const login = createAsyncThunk(
       localStorage.setItem('token', access_token);
 
       // Decodificar el token para obtener el usuario
-      const decoded = jwt_decode(access_token);
+      const decoded = jwtDecode(access_token);
       
       return { 
         token: access_token, 

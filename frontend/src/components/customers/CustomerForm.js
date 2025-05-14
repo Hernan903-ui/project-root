@@ -11,7 +11,8 @@ import {
   Typography,
   Divider
 } from '@mui/material';
-import { createCustomer, updateCustomer, clearCustomerState } from '../../redux/slices/customerSlice';
+import { createCustomer, updateCustomer, clearCustomerState } from '../../features/customers/customerSlice';
+
 
 // Opciones para el tipo de cliente
 const customerTypes = [

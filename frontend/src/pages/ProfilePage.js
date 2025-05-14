@@ -19,7 +19,8 @@ import {
 import { fetchUserProfile, setActiveTab } from '../features/user/userProfileSlice';
 import PersonalInformation from '../components/profile/PersonalInformation';
 import ChangePassword from '../components/profile/ChangePassword';
-import SystemPreferences from '../components/profile/SystemPreferences';
+// Importación de SystemPreferences (eliminada)
+// import SystemPreferences from '../components/profile/SystemPreferences';
 import ActivityHistory from '../components/profile/ActivityHistory';
 
 // Componente para los paneles de pestañas
@@ -62,7 +63,7 @@ const ProfilePage = () => {
       <Typography variant="h4" gutterBottom>
         Mi Perfil
       </Typography>
-      
+
       {profileLoading && !profile ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
           <CircularProgress />
@@ -79,26 +80,33 @@ const ProfilePage = () => {
             >
               <Tab icon={<PersonIcon />} label="Información Personal" iconPosition="start" />
               <Tab icon={<LockIcon />} label="Cambiar Contraseña" iconPosition="start" />
-              <Tab icon={<SettingsIcon />} label="Preferencias" iconPosition="start" />
+               {/* Pestaña de Preferencias eliminada si SystemPreferences no existe */}
+              {/* <Tab icon={<SettingsIcon />} label="Preferencias" iconPosition="start" /> */}
               <Tab icon={<HistoryIcon />} label="Actividad" iconPosition="start" />
             </Tabs>
           </Paper>
-          
+
           <TabPanel value={activeTab} index={0}>
             <PersonalInformation />
           </TabPanel>
-          
+
           <TabPanel value={activeTab} index={1}>
             <ChangePassword />
           </TabPanel>
-          
-          <TabPanel value={activeTab} index={2}>
+
+          {/* TabPanel de Preferencias eliminado si SystemPreferences no existe */}
+          {/* <TabPanel value={activeTab} index={2}>
             <SystemPreferences />
-          </TabPanel>
-          
-          <TabPanel value={activeTab} index={3}>
+          </TabPanel> */}
+           <TabPanel value={activeTab} index={2}> {/* Ajuste de índice si se elimina una pestaña */}
             <ActivityHistory />
           </TabPanel>
+
+
+          {/* El TabPanel de Actividad ahora podría ser index 2 si solo hay 3 pestañas */}
+          {/* <TabPanel value={activeTab} index={3}>
+            <ActivityHistory />
+          </TabPanel> */}
         </>
       )}
     </Box>

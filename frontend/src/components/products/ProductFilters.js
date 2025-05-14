@@ -14,7 +14,8 @@ import {
 import SearchIcon from '@mui/icons-material/Search';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import ClearIcon from '@mui/icons-material/Clear';
-import { useQuery } from 'react-query';
+// import { useQuery } from 'react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { getCategories } from '../../api/productApi';
 
 const ProductFilters = ({ onFilter }) => {

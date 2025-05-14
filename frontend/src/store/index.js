@@ -1,23 +1,28 @@
+// src/store/index.js
 import { configureStore } from '@reduxjs/toolkit';
 import authReducer from '../features/auth/authSlice';
-import cartReducer from '../features/pos/cartSlice';
 import customerReducer from '../features/customers/customerSlice';
-import salesReducer from '../features/sales/salesSlice';
+import cartReducer from '../features/pos/cartSlice';
 import reportsReducer from '../features/reports/reportsSlice';
-import userProfileReducer from '../features/user/userProfileSlice';
+import salesReducer from '../features/sales/salesSlice';
 import settingsReducer from '../features/settings/settingsSlice';
-// Otros reducers...
+import userProfileReducer from '../features/user/userProfileSlice';
+import suppliersReducer from '../features/suppliers/suppliersSlice';
+import inventoryReducer from '../features/inventory/inventorySlice';
+import productReducer from '../features/products/productSlice';
 
-export const store = configureStore({
+const store = configureStore({
   reducer: {
     auth: authReducer,
-    cart: cartReducer,
     customers: customerReducer,
-    sales: salesReducer,
+    cart: cartReducer,
     reports: reportsReducer,
-    userProfile: userProfileReducer,
+    sales: salesReducer,
     settings: settingsReducer,
-    // Otros reducers...
+    userProfile: userProfileReducer,
+    suppliers: suppliersReducer,
+    inventory: inventoryReducer,
+    products: productReducer
   },
 });
 

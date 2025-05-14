@@ -1,131 +1,79 @@
-import React from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
-import { useSelector } from 'react-redux';
-import POSPage from '../pages/POSPage';
-import ProductsPage from '../pages/ProductsPage';
-import CreateProductPage from '../pages/CreateProductPage';
-import EditProductPage from '../pages/EditProductPage';
-import ProductDetailsPage from '../pages/ProductDetailsPage';
-import InventoryPage from '../pages/InventoryPage';
-import CustomersPage from '../pages/CustomersPage';
-import SalesPage from '../pages/SalesPage';
-import ReportsPage from '../pages/ReportsPage';
-import ProfilePage from '../pages/ProfilePage';
-import SettingsPage from '../pages/SettingsPage';
-import SuppliersPage from '../pages/SuppliersPage';
-import CreateSupplierPage from '../pages/CreateSupplierPage';
-import EditSupplierPage from '../pages/EditSupplierPage';
-import SupplierDetailsPage from '../pages/SupplierDetailsPage';
-import PurchaseOrdersPage from '../pages/PurchaseOrdersPage';
-import CreatePurchaseOrderPage from '../pages/CreatePurchaseOrderPage';
-import EditPurchaseOrderPage from '../pages/EditPurchaseOrderPage';
-import PurchaseOrderDetailsPage from '../pages/PurchaseOrderDetailsPage';
-import ReceiveInventoryPage from '../pages/ReceiveInventoryPage';
+// src/routes/index.js
+import React from 'react'
+import { createBrowserRouter } from 'react-router-dom'
 
-// Layouts
-import DashboardLayout from '../components/layout/DashboardLayout';
+// Layout
+import DashboardLayout from '../components/layout/DashboardLayout'
 
-// Pages
-import LoginPage from '../pages/LoginPage';
-import DashboardPage from '../pages/DashboardPage';
+// Páginas
+import LoginPage from '../pages/LoginPage'
+import DashboardPage from '../pages/DashboardPage'
+import ProductsPage from '../pages/ProductsPage'
+import ProductDetailsPage from '../pages/ProductDetailsPage'
+import CreateProductPage from '../pages/CreateProductPage'
+import EditProductPage from '../pages/EditProductPage'
+import InventoryPage from '../pages/InventoryPage'
+import SalesPage from '../pages/SalesPage'
+import CustomersPage from '../pages/CustomersPage'
+import SuppliersPage from '../pages/SuppliersPage'
+import SupplierDetailsPage from '../pages/SupplierDetailsPage'
+import CreateSupplierPage from '../pages/CreateSupplierPage'
+import EditSupplierPage from '../pages/EditSupplierPage'
+import PurchaseOrdersPage from '../pages/PurchaseOrdersPage'
+import ReportsPage from '../pages/ReportsPage'
+import SettingsPage from '../pages/SettingsPage'
+import ProfilePage from '../pages/ProfilePage'
 
-// Componente para rutas protegidas
-const ProtectedRoute = ({ children }) => {
-  const { isAuthenticated } = useSelector((state) => state.auth);
-  
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
-  }
-  
-  return children;
-};
+// Página 404
+const NotFound = () => <div>Página no encontrada</div>
 
-// Componente para rutas que requieren permisos de administrador
-const AdminRoute = ({ children }) => {
-  const { isAuthenticated, user } = useSelector((state) => state.auth);
-  
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
-  }
-  
-  // Verificar si el usuario tiene permisos de administrador
-  if (user && (user.role !== 'admin' && !user.permissions?.canManageSettings)) {
-    return <Navigate to="/dashboard" replace />;
-  }
-  
-  return children;
-};
+const router = createBrowserRouter([
+  {
+    path: '/login',
+    element: <LoginPage />,
+    errorElement: <NotFound />,
+  },
+  {
+    path: '/',
+    element: <DashboardLayout />,
+    errorElement: <NotFound />,
+    children: [
+      // Ruta por defecto (index)
+      { index: true, element: <DashboardPage /> },
 
-const AppRoutes = () => {
-  return (
-    <Routes>
-      {/* Rutas públicas */}
-      <Route path="/login" element={<LoginPage />} />
-      
-      {/* Rutas protegidas con layout de dashboard */}
-      <Route 
-        path="/" 
-        element={
-          <ProtectedRoute>
-            <DashboardLayout />
-          </ProtectedRoute>
-        }
-      >
-        <Route index element={<Navigate to="/dashboard" replace />} />
-        <Route path="dashboard" element={<DashboardPage />} />
-        
-        {/* Rutas de productos */}
-        <Route path="products" element={<ProductsPage />} />
-        <Route path="products/new" element={<CreateProductPage />} />
-        <Route path="products/edit/:id" element={<EditProductPage />} />
-        <Route path="products/:id" element={<ProductDetailsPage />} />
-        
-        {/* Rutas de Punto de Venta */}
-        <Route path="pos" element={<POSPage />} />
-        
-        {/* Rutas de inventario */}
-        <Route path="inventory" element={<InventoryPage />} />
-        
-        {/* Rutas de clientes */}
-        <Route path="customers" element={<CustomersPage />} />
-        
-        {/* Rutas de ventas */}
-        <Route path="sales" element={<SalesPage />} />
-        
-        {/* Rutas de reportes */}
-        <Route path="reports" element={<ReportsPage />} />
-        
-        {/* Ruta de perfil de usuario */}
-        <Route path="profile" element={<ProfilePage />} />
+      // Productos
+      { path: 'products', element: <ProductsPage /> },
+      { path: 'products/:id', element: <ProductDetailsPage /> },
+      { path: 'products/create', element: <CreateProductPage /> },
+      { path: 'products/edit/:id', element: <EditProductPage /> },
 
-        {/* Rutas de proveedores */}
-        <Route path="suppliers" element={<SuppliersPage />} />
-        <Route path="suppliers/create" element={<CreateSupplierPage />} />
-        <Route path="suppliers/edit/:id" element={<EditSupplierPage />} />
-        <Route path="suppliers/:id" element={<SupplierDetailsPage />} />
-        
-        {/* Rutas de órdenes de compra */}
-        <Route path="purchase-orders" element={<PurchaseOrdersPage />} />
-        <Route path="purchase-orders/create" element={<CreatePurchaseOrderPage />} />
-        <Route path="purchase-orders/edit/:id" element={<EditPurchaseOrderPage />} />
-        <Route path="purchase-orders/:id" element={<PurchaseOrderDetailsPage />} />
-        <Route path="purchase-orders/:id/receive" element={<ReceiveInventoryPage />} />
-        
-        {/* Ruta de configuración - Solo para administradores */}
-        <Route 
-          path="settings" 
-          element={
-            <AdminRoute>
-              <SettingsPage />
-            </AdminRoute>
-          } 
-        />
-      </Route>
-      
-      {/* Ruta para manejar rutas no encontradas */}
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
-  );
-};
+      // Inventario
+      { path: 'inventory', element: <InventoryPage /> },
 
-export default AppRoutes;
+      // Ventas
+      { path: 'sales', element: <SalesPage /> },
+
+      // Clientes
+      { path: 'customers', element: <CustomersPage /> },
+
+      // Proveedores
+      { path: 'suppliers', element: <SuppliersPage /> },
+      { path: 'suppliers/:id', element: <SupplierDetailsPage /> },
+      { path: 'suppliers/create', element: <CreateSupplierPage /> },
+      { path: 'suppliers/edit/:id', element: <EditSupplierPage /> },
+
+      // Órdenes de compra
+      { path: 'purchase-orders', element: <PurchaseOrdersPage /> },
+
+      // Reportes, configuración y perfil
+      { path: 'reports', element: <ReportsPage /> },
+      { path: 'settings', element: <SettingsPage /> },
+      { path: 'profile', element: <ProfilePage /> },
+
+      // Cualquier otra ruta bajo '/' → 404
+      { path: '*', element: <NotFound /> },
+    ],
+  },
+])
+
+export default router

@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect, useMemo } from 'react';
+import React, { createContext, useState, useEffect, useMemo, useContext } from 'react';
 import { ThemeProvider as MuiThemeProvider } from '@mui/material/styles';
 import getTheme from '../themes';
 
@@ -8,9 +8,17 @@ export const ThemeContext = createContext({
   toggleTheme: () => {},
 });
 
+// Hook personalizado para usar el tema - añadir esta función
+export const useTheme = () => {
+  const context = useContext(ThemeContext);
+  if (context === undefined) {
+    throw new Error('useTheme debe ser usado dentro de un ThemeProvider');
+  }
+  return context;
+};
+
 // Proveedor de tema
 export const ThemeProvider = ({ children }) => {
-  // Verificar si hay un tema guardado en localStorage
   const [theme, setTheme] = useState(() => {
     const savedTheme = localStorage.getItem('theme');
     return savedTheme || 'light';
@@ -64,13 +72,4 @@ export const ThemeProvider = ({ children }) => {
       </MuiThemeProvider>
     </ThemeContext.Provider>
   );
-};
-
-// Hook personalizado para usar el tema
-export const useTheme = () => {
-  const context = React.useContext(ThemeContext);
-  if (context === undefined) {
-    throw new Error('useTheme debe ser usado dentro de un ThemeProvider');
-  }
-  return context;
 };

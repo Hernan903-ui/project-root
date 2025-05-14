@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import { Snackbar, Alert } from '@mui/material';
 
-// Crear contexto
 const NotificationContext = createContext({
   notify: () => {},
 });

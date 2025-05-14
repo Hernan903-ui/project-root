@@ -24,24 +24,24 @@ import {
   ViewModule as ViewModuleIcon,
 } from '@mui/icons-material';
 import { DataGrid } from '@mui/x-data-grid';
-import { 
-  fetchCustomers, 
-  deleteCustomer, 
-  clearCustomerState 
+import {
+  fetchCustomers,
+  deleteCustomer,
+  clearCustomerState
 } from '../features/customers/customerSlice';
 import CustomerForm from '../components/customers/CustomerForm';
 import CustomerDetails from '../components/customers/CustomerDetails';
 import CustomerFilters from '../components/customers/CustomerFilters';
 import CustomerCard from '../components/customers/CustomerCard';
-import { generatePDF } from '../utils/reportGenerator';
+import { generatePDF } from '../utils/reportGenerator'; // **Corregido**
 
 const CustomersPage = () => {
   const dispatch = useDispatch();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  
+
   const { customers, loading, error } = useSelector((state) => state.customers);
-  
+
   const [viewMode, setViewMode] = useState('grid');
   const [openAddForm, setOpenAddForm] = useState(false);
   const [openDetails, setOpenDetails] = useState(false);
@@ -113,58 +113,58 @@ const CustomersPage = () => {
   // Filtrar clientes según los filtros aplicados
   const filteredCustomers = customers.filter(customer => {
     const searchTerms = filters.search.toLowerCase();
-    const matchesSearch = !searchTerms || 
+    const matchesSearch = !searchTerms ||
       customer.name?.toLowerCase().includes(searchTerms) ||
       customer.email?.toLowerCase().includes(searchTerms) ||
       customer.phone?.toLowerCase().includes(searchTerms) ||
       customer.document?.toLowerCase().includes(searchTerms) ||
       customer.companyName?.toLowerCase().includes(searchTerms);
-    
+
     const matchesType = !filters.type || customer.type === filters.type;
-    const matchesCity = !filters.city || 
+    const matchesCity = !filters.city ||
       (customer.city && customer.city.toLowerCase().includes(filters.city.toLowerCase()));
-    const matchesState = !filters.state || 
+    const matchesState = !filters.state ||
       (customer.state && customer.state.toLowerCase().includes(filters.state.toLowerCase()));
-    
+
     return matchesSearch && matchesType && matchesCity && matchesState;
   });
 
   // Columnas para la vista de tabla
   const columns = [
-    { 
+    {
       field: 'name',
       headerName: 'Nombre',
       flex: 1,
       minWidth: 180,
     },
-    { 
+    {
       field: 'type',
       headerName: 'Tipo',
       width: 120,
       valueFormatter: (params) => params.value === 'business' ? 'Empresa' : 'Individual'
     },
-    { 
+    {
       field: 'email',
       headerName: 'Email',
       flex: 1,
       minWidth: 180,
     },
-    { 
+    {
       field: 'phone',
       headerName: 'Teléfono',
       width: 150,
     },
-    { 
+    {
       field: 'city',
       headerName: 'Ciudad',
       width: 150,
     },
-    { 
+    {
       field: 'state',
       headerName: 'Provincia/Estado',
       width: 150,
     },
-    { 
+    {
       field: 'document',
       headerName: 'Documento',
       width: 150,
@@ -188,7 +188,7 @@ const CustomersPage = () => {
           <Typography variant="h6">
             Clientes ({filteredCustomers.length})
           </Typography>
-          
+
           <Box sx={{ display: 'flex', gap: 1 }}>
             {!isMobile && (
               <Box sx={{ display: 'flex', border: 1, borderColor: 'divider', borderRadius: 1 }}>
@@ -211,14 +211,14 @@ const CustomersPage = () => {
                 </Button>
               </Box>
             )}
-            
+
             <Button
               variant="outlined"
               onClick={handleGenerateReport}
             >
               Exportar
             </Button>
-            
+
             <Button
               variant="contained"
               startIcon={<AddIcon />}
@@ -231,7 +231,7 @@ const CustomersPage = () => {
         </Box>
 
         <CustomerFilters onFilterChange={handleFilterChange} />
-        
+
         {loading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
             <CircularProgress />
@@ -287,10 +287,10 @@ const CustomersPage = () => {
       </Paper>
 
       {/* Modal para añadir/editar cliente */}
-      <Dialog 
-        open={openAddForm} 
-        onClose={handleCloseAddForm} 
-        maxWidth="md" 
+      <Dialog
+        open={openAddForm}
+        onClose={handleCloseAddForm}
+        maxWidth="md"
         fullWidth
         fullScreen={isMobile}
       >
@@ -298,18 +298,18 @@ const CustomersPage = () => {
           {selectedCustomer ? 'Editar Cliente' : 'Nuevo Cliente'}
         </DialogTitle>
         <DialogContent>
-          <CustomerForm 
-            customer={selectedCustomer} 
+          <CustomerForm
+            customer={selectedCustomer}
             onClose={handleCloseAddForm}
           />
         </DialogContent>
       </Dialog>
 
       {/* Modal para ver detalles de cliente */}
-      <Dialog 
-        open={openDetails} 
-        onClose={() => setOpenDetails(false)} 
-        maxWidth="md" 
+      <Dialog
+        open={openDetails}
+        onClose={() => setOpenDetails(false)}
+        maxWidth="md"
         fullWidth
         fullScreen={isMobile}
       >
@@ -348,8 +348,8 @@ const CustomersPage = () => {
           <Button onClick={() => setOpenDeleteConfirm(false)}>
             Cancelar
           </Button>
-          <Button 
-            color="error" 
+          <Button
+            color="error"
             variant="contained"
             onClick={handleDeleteCustomer}
           >
@@ -362,3 +362,4 @@ const CustomersPage = () => {
 };
 
 export default CustomersPage;
+

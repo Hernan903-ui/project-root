@@ -9,7 +9,7 @@ import {
   CircularProgress,
 } from '@mui/material';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
-import { useQuery, useMutation, useQueryClient } from 'react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSnackbar } from 'notistack';
 
 import ProductForm from '../components/products/ProductForm';
