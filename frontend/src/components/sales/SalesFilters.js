@@ -1,239 +1,138 @@
+// components/sales/SalesFilters.js
 import React, { useState } from 'react';
-import {
-  Box,
-  Grid,
-  TextField,
-  Button,
-  FormControl,
-  InputLabel,
-  Select,
+import { 
+  Box, 
+  TextField, 
+  Button, 
+  FormControl, 
+  InputLabel, 
+  Select, 
   MenuItem,
-  IconButton,
-  InputAdornment,
-  Typography
+  Paper
 } from '@mui/material';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { es } from 'date-fns/locale';
-import {
-  Search as SearchIcon,
-  Clear as ClearIcon,
-  FilterList as FilterListIcon
-} from '@mui/icons-material';
+import { Grid } from '@mui/material';
+import { Search as SearchIcon, FilterList as FilterIcon } from '@mui/icons-material';
+import DateRangeSelector from '../reports/DateRangeSelector';
 
-const SalesFilters = ({ onFilterChange }) => {
-  const [showAdvanced, setShowAdvanced] = useState(false);
+const SalesFilters = ({ onFilter }) => {
   const [filters, setFilters] = useState({
-    searchTerm: '',
-    dateRange: {
-      start: null,
-      end: null
-    },
+    search: '',
     status: '',
-    customer: ''
+    dateFrom: null,
+    dateTo: null,
+    paymentMethod: ''
   });
 
-  // Opciones para estado de ventas
-  const statusOptions = [
-    { value: '', label: 'Todos' },
-    { value: 'Completada', label: 'Completada' },
-    { value: 'Pendiente', label: 'Pendiente' },
-    { value: 'Cancelada', label: 'Cancelada' },
-    { value: 'Devuelta', label: 'Con devolución' }
-  ];
-
-  const handleSearchChange = (e) => {
-    const updatedFilters = {
-      ...filters,
-      searchTerm: e.target.value
-    };
-    setFilters(updatedFilters);
-    onFilterChange(updatedFilters);
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFilters(prev => ({ ...prev, [name]: value }));
   };
 
   const handleDateChange = (field, value) => {
-    const updatedFilters = {
-      ...filters,
-      dateRange: {
-        ...filters.dateRange,
-        [field]: value
-      }
-    };
-    setFilters(updatedFilters);
-    onFilterChange(updatedFilters);
+    setFilters(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleClearSearch = () => {
-    const updatedFilters = {
-      ...filters,
-      searchTerm: ''
-    };
-    setFilters(updatedFilters);
-    onFilterChange(updatedFilters);
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    onFilter(filters);
   };
 
-  const handleStatusChange = (e) => {
-    const updatedFilters = {
-      ...filters,
-      status: e.target.value
-    };
-    setFilters(updatedFilters);
-    onFilterChange(updatedFilters);
-  };
-
-  const handleCustomerChange = (e) => {
-    const updatedFilters = {
-      ...filters,
-      customer: e.target.value
-    };
-    setFilters(updatedFilters);
-    onFilterChange(updatedFilters);
-  };
-
-  const handleClearFilters = () => {
-    const resetFilters = {
-      searchTerm: '',
-      dateRange: {
-        start: null,
-        end: null
-      },
+  const handleReset = () => {
+    setFilters({
+      search: '',
       status: '',
-      customer: ''
-    };
-    setFilters(resetFilters);
-    onFilterChange(resetFilters);
-  };
-
-  const handleToggleAdvanced = () => {
-    setShowAdvanced(!showAdvanced);
+      dateFrom: null,
+      dateTo: null,
+      paymentMethod: ''
+    });
+    onFilter({});
   };
 
   return (
-    <Box sx={{ mb: 3 }}>
-      <Grid container spacing={2} alignItems="center">
-        <Grid item xs={12} md={6}>
-          <TextField
-            fullWidth
-            variant="outlined"
-            placeholder="Buscar por número de factura o cliente"
-            value={filters.searchTerm}
-            onChange={handleSearchChange}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon />
-                </InputAdornment>
-              ),
-              endAdornment: filters.searchTerm && (
-                <InputAdornment position="end">
-                  <IconButton size="small" onClick={handleClearSearch}>
-                    <ClearIcon />
-                  </IconButton>
-                </InputAdornment>
-              )
-            }}
-            size="small"
-          />
+    <Paper component="form" onSubmit={handleSubmit} sx={{ p: 2, mb: 3 }}>
+      <Box sx={{ mb: 2 }}>
+        <Grid container spacing={2}>
+          <Grid gridColumn={{ xs: 'span 12', md: 'span 6' }}>
+            <TextField
+              fullWidth
+              name="search"
+              value={filters.search}
+              onChange={handleChange}
+              placeholder="Buscar por número de orden o cliente"
+              InputProps={{
+                startAdornment: <SearchIcon sx={{ color: 'text.secondary', mr: 1 }} />
+              }}
+            />
+          </Grid>
+          
+          <Grid gridColumn={{ xs: 'span 12', md: 'span 6' }}>
+            <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
+              <Button 
+                variant="outlined" 
+                startIcon={<FilterIcon />}
+                type="submit"
+              >
+                Filtrar
+              </Button>
+              <Button 
+                variant="text" 
+                onClick={handleReset}
+              >
+                Limpiar
+              </Button>
+            </Box>
+          </Grid>
         </Grid>
-        
-        <Grid item xs={12} md={3}>
-          <FormControl fullWidth size="small">
-            <InputLabel>Estado</InputLabel>
+      </Box>
+
+      <Grid container spacing={2}>
+        <Grid gridColumn={{ xs: 'span 12', sm: 'span 6', md: 'span 3' }}>
+          <FormControl fullWidth>
+            <InputLabel id="status-label">Estado</InputLabel>
             <Select
+              labelId="status-label"
+              name="status"
               value={filters.status}
-              onChange={handleStatusChange}
+              onChange={handleChange}
               label="Estado"
             >
-              {statusOptions.map(option => (
-                <MenuItem key={option.value} value={option.value}>
-                  {option.label}
-                </MenuItem>
-              ))}
+              <MenuItem value="">Todos</MenuItem>
+              <MenuItem value="completed">Completado</MenuItem>
+              <MenuItem value="pending">Pendiente</MenuItem>
+              <MenuItem value="cancelled">Cancelado</MenuItem>
             </Select>
           </FormControl>
         </Grid>
         
-        <Grid item xs={12} md={3}>
-          <Box sx={{ display: 'flex', gap: 1 }}>
-            <Button
-              variant={showAdvanced ? "contained" : "outlined"}
-              onClick={handleToggleAdvanced}
-              startIcon={<FilterListIcon />}
-              size="small"
+        <Grid gridColumn={{ xs: 'span 12', sm: 'span 6', md: 'span 3' }}>
+          <FormControl fullWidth>
+            <InputLabel id="payment-method-label">Método de Pago</InputLabel>
+            <Select
+              labelId="payment-method-label"
+              name="paymentMethod"
+              value={filters.paymentMethod}
+              onChange={handleChange}
+              label="Método de Pago"
             >
-              Filtros
-            </Button>
-            
-            {(filters.searchTerm || filters.status || filters.dateRange.start || filters.dateRange.end || filters.customer) && (
-              <Button
-                variant="outlined"
-                color="secondary"
-                onClick={handleClearFilters}
-                size="small"
-              >
-                Limpiar
-              </Button>
-            )}
-          </Box>
+              <MenuItem value="">Todos</MenuItem>
+              <MenuItem value="cash">Efectivo</MenuItem>
+              <MenuItem value="credit_card">Tarjeta de Crédito</MenuItem>
+              <MenuItem value="debit_card">Tarjeta de Débito</MenuItem>
+              <MenuItem value="transfer">Transferencia</MenuItem>
+            </Select>
+          </FormControl>
         </Grid>
         
-        {showAdvanced && (
-          <>
-            <Grid item xs={12}>
-              <Typography variant="subtitle2" gutterBottom>
-                Filtros avanzados
-              </Typography>
-            </Grid>
-            
-            <Grid item xs={12} md={4}>
-              <TextField
-                fullWidth
-                size="small"
-                label="Cliente"
-                value={filters.customer}
-                onChange={handleCustomerChange}
-                placeholder="Nombre del cliente"
-              />
-            </Grid>
-            
-            <Grid item xs={12} md={4}>
-              <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={es}>
-                <DatePicker
-                  label="Fecha inicio"
-                  value={filters.dateRange.start}
-                  onChange={(newValue) => handleDateChange('start', newValue)}
-                  renderInput={(params) => 
-                    <TextField 
-                      {...params} 
-                      fullWidth 
-                      size="small"
-                    />
-                  }
-                />
-              </LocalizationProvider>
-            </Grid>
-            
-            <Grid item xs={12} md={4}>
-              <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={es}>
-                <DatePicker
-                  label="Fecha fin"
-                  value={filters.dateRange.end}
-                  onChange={(newValue) => handleDateChange('end', newValue)}
-                  renderInput={(params) => 
-                    <TextField 
-                      {...params} 
-                      fullWidth 
-                      size="small"
-                    />
-                  }
-                />
-              </LocalizationProvider>
-            </Grid>
-          </>
-        )}
+        <Grid gridColumn={{ xs: 'span 12', sm: 'span 12', md: 'span 6' }}>
+          <DateRangeSelector 
+            startDate={filters.dateFrom}
+            endDate={filters.dateTo}
+            onStartDateChange={(date) => handleDateChange('dateFrom', date)}
+            onEndDateChange={(date) => handleDateChange('dateTo', date)}
+          />
+        </Grid>
       </Grid>
-    </Box>
+    </Paper>
   );
 };
 

@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+//src/components/layout/DashboardLayout.js
+import React, { useState, useCallback } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import {
   Box,
@@ -83,30 +84,30 @@ const DashboardLayout = () => {
     }
   ]);
 
-  const handleDrawerToggle = () => {
-    setOpen(!open);
-  };
+  const handleDrawerToggle = useCallback(() => {
+    setOpen((prevOpen) => !prevOpen);
+  }, []);
 
-  const handleProfileMenuOpen = (event) => {
+  const handleProfileMenuOpen = useCallback((event) => {
     setAnchorEl(event.currentTarget);
-  };
+  }, []);
 
-  const handleMenuClose = () => {
+  const handleMenuClose = useCallback(() => {
     setAnchorEl(null);
-  };
+  }, []);
 
-  const handleLogout = () => {
+  const handleLogout = useCallback(() => {
     dispatch(logout());
     navigate('/login');
     notify('Sesión cerrada exitosamente', 'info');
-  };
+  }, [dispatch, navigate, notify]);
 
-  const handleNavigate = (path) => {
+  const handleNavigate = useCallback((path) => {
     navigate(path);
     if (isMobile) {
       setOpen(false);
     }
-  };
+  }, [navigate, isMobile]);
 
   const menuItems = [
     { text: 'Dashboard', icon: <DashboardIcon />, path: '/dashboard' },
@@ -126,29 +127,36 @@ const DashboardLayout = () => {
     user?.role === 'admin' ? { text: 'Configuración', icon: <SettingsIcon />, path: '/settings' } : null,
   ].filter(Boolean); // Filter out null items
 
-  const handleNotificationRead = (id) => {
-    setNotifications(
-      notifications.map((notification) =>
+  const handleNotificationRead = useCallback((id) => {
+    setNotifications((prevNotifications) =>
+      prevNotifications.map((notification) =>
         notification.id === id ? { ...notification, read: true } : notification
       )
     );
-  };
+  }, []);
 
-  const handleNotificationAction = (id) => {
-    const notification = notifications.find((n) => n.id === id);
-    if (notification && notification.actionPath) {
-      navigate(notification.actionPath);
-      handleNotificationRead(id);
-    }
-  };
+  const handleNotificationAction = useCallback((id) => {
+    setNotifications((prevNotifications) => {
+      const notification = prevNotifications.find((n) => n.id === id);
+      if (notification && notification.actionPath) {
+        navigate(notification.actionPath);
+        return prevNotifications.map((n) => 
+          n.id === id ? { ...n, read: true } : n
+        );
+      }
+      return prevNotifications;
+    });
+  }, [navigate]);
 
-  const handleClearAllNotifications = () => {
+  const handleClearAllNotifications = useCallback(() => {
     setNotifications([]);
-  };
+  }, []);
 
-  const isActive = (path) => {
+  const isActive = useCallback((path) => {
     return location.pathname === path || location.pathname.startsWith(`${path}/`);
-  };
+  }, [location.pathname]);
+
+  const activeMenuTitle = menuItems.find(item => isActive(item.path))?.text || 'Dashboard';
 
   const drawer = (
     <>
@@ -157,14 +165,14 @@ const DashboardLayout = () => {
           display: 'flex', 
           alignItems: 'center', 
           justifyContent: 'space-between',
-          px: [1]
+          px: 2
         }}
       >
         <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
           POS System
         </Typography>
         {isMobile && (
-          <IconButton onClick={handleDrawerToggle}>
+          <IconButton onClick={handleDrawerToggle} size="large" edge="end" aria-label="cerrar menú">
             <ChevronLeftIcon />
           </IconButton>
         )}
@@ -177,6 +185,8 @@ const DashboardLayout = () => {
               selected={isActive(item.path)}
               onClick={() => handleNavigate(item.path)}
               sx={{
+                borderRadius: 1,
+                mx: 1,
                 '&.Mui-selected': {
                   backgroundColor: theme.palette.mode === 'dark' 
                     ? 'rgba(255, 255, 255, 0.12)' 
@@ -202,6 +212,15 @@ const DashboardLayout = () => {
             <ListItemButton 
               selected={isActive(item.path)}
               onClick={() => handleNavigate(item.path)}
+              sx={{
+                borderRadius: 1,
+                mx: 1,
+                '&.Mui-selected': {
+                  backgroundColor: theme.palette.mode === 'dark' 
+                    ? 'rgba(255, 255, 255, 0.12)' 
+                    : 'rgba(0, 0, 0, 0.08)',
+                }
+              }}
             >
               <ListItemIcon>{item.icon}</ListItemIcon>
               <ListItemText primary={item.text} />
@@ -213,12 +232,13 @@ const DashboardLayout = () => {
   );
 
   return (
-    <Box sx={{ display: 'flex' }}>
+    <Box sx={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
       <CssBaseline />
       <SkipLink mainContentId="main-content" />
       
       <AppBar
         position="fixed"
+        elevation={1}
         sx={{
           width: { md: open ? `calc(100% - ${drawerWidth}px)` : '100%' },
           ml: { md: open ? `${drawerWidth}px` : 0 },
@@ -226,6 +246,7 @@ const DashboardLayout = () => {
             easing: theme.transitions.easing.sharp,
             duration: theme.transitions.duration.leavingScreen,
           }),
+          zIndex: (theme) => theme.zIndex.drawer + 1,
         }}
       >
         <Toolbar>
@@ -235,11 +256,12 @@ const DashboardLayout = () => {
             edge="start"
             onClick={handleDrawerToggle}
             sx={{ mr: 2 }}
+            size="large"
           >
             <MenuIcon />
           </IconButton>
           <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
-            {menuItems.find(item => isActive(item.path))?.text || 'Dashboard'}
+            {activeMenuTitle}
           </Typography>
           
           <NotificationCenter 
@@ -247,10 +269,14 @@ const DashboardLayout = () => {
             onRead={handleNotificationRead} 
             onClearAll={handleClearAllNotifications}
             onAction={handleNotificationAction}
-            />
+          />
 
+          <Box sx={{ mx: 1 }}>
             <TextSizeAdjuster />
+          </Box>
+          <Box sx={{ mx: 1 }}>
             <ThemeToggle />
+          </Box>
           
           <Tooltip title="Cuenta">
             <IconButton
@@ -261,6 +287,7 @@ const DashboardLayout = () => {
               aria-haspopup="true"
               onClick={handleProfileMenuOpen}
               color="inherit"
+              sx={{ ml: 1 }}
             >
               <Avatar
                 alt={user?.name || 'Usuario'}
@@ -325,7 +352,12 @@ const DashboardLayout = () => {
           }}
           sx={{
             display: { xs: 'block', md: 'none' },
-            '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
+            '& .MuiDrawer-paper': { 
+              boxSizing: 'border-box', 
+              width: drawerWidth,
+              borderRight: '1px solid',
+              borderRightColor: 'divider'
+            },
           }}
         >
           {drawer}
@@ -337,7 +369,12 @@ const DashboardLayout = () => {
           open={open}
           sx={{
             display: { xs: 'none', md: 'block' },
-            '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
+            '& .MuiDrawer-paper': { 
+              boxSizing: 'border-box', 
+              width: drawerWidth,
+              borderRight: '1px solid',
+              borderRightColor: 'divider'
+            },
           }}
         >
           {drawer}
@@ -349,6 +386,8 @@ const DashboardLayout = () => {
         id="main-content"
         sx={{
           flexGrow: 1,
+          height: '100vh',
+          overflow: 'auto',
           width: { md: open ? `calc(100% - ${drawerWidth}px)` : '100%' },
           ml: { md: open ? `${drawerWidth}px` : 0 },
           pt: { xs: 8, sm: 9 },
@@ -358,7 +397,7 @@ const DashboardLayout = () => {
           }),
         }}
       >
-        <Container maxWidth="xl" sx={{ mt: 2 }}>
+        <Container maxWidth="xl" sx={{ py: 3, px: { xs: 2, sm: 3 } }}>
           <Outlet />
         </Container>
       </Box>

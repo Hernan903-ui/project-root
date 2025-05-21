@@ -57,8 +57,8 @@ const initialState = {
   error: null,
   exportFormat: 'pdf',
   dateRange: {
-    start: null,
-    end: null
+    start: null, // Será un string ISO
+    end: null    // Será un string ISO
   },
   additionalFilters: {}
 };
@@ -73,8 +73,14 @@ const reportsSlice = createSlice({
       state.reportData = null;
       state.error = null;
     },
+    // Actualizado para serializar fechas
     setDateRange: (state, action) => {
-      state.dateRange = action.payload;
+      const { start, end } = action.payload;
+      state.dateRange = {
+        // Convertir objetos Date a strings ISO
+        start: start instanceof Date ? start.toISOString() : start,
+        end: end instanceof Date ? end.toISOString() : end
+      };
     },
     setExportFormat: (state, action) => {
       state.exportFormat = action.payload;

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -7,7 +7,6 @@ import {
   Breadcrumbs,
   Link,
   Paper,
-  Grid,
   CircularProgress,
   Alert,
 } from '@mui/material';
@@ -24,90 +23,93 @@ const ProductsPage = () => {
   const navigate = useNavigate();
   const { enqueueSnackbar } = useSnackbar();
   const queryClient = useQueryClient();
-  
+
   const [filters, setFilters] = useState({
     search: '',
     category_id: '',
     is_active: '',
   });
+  
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 20,
   });
 
+  // Optimizado con useQuery v5
   const {
     data,
     isLoading,
     error,
     refetch,
-  } = useQuery(
-    ['products', pagination.page, pagination.limit, filters],
-    () => getProducts({ ...filters, ...pagination }),
-    {
-      keepPreviousData: true,
-    }
-  );
+  } = useQuery({
+    queryKey: ['products', pagination.page, pagination.limit, filters],
+    queryFn: () => getProducts({ ...filters, ...pagination }),
+    keepPreviousData: true, // Esta propiedad se mantiene en v5 para retrocompatibilidad
+    staleTime: 60000, // 1 minuto antes de considerar los datos obsoletos
+  });
 
   // Mutación para realizar operaciones masivas
-  const bulkMutation = useMutation(
-    ({ id, data }) => updateProduct(id, data),
-    {
-      onSuccess: () => {
-        queryClient.invalidateQueries('products');
-        enqueueSnackbar('Operación realizada con éxito', { variant: 'success' });
-      },
-      onError: (error) => {
-        enqueueSnackbar(
-          `Error al realizar la operación: ${error.response?.data?.detail || error.message}`,
-          { variant: 'error' }
-        );
-      },
-    }
-  );
+  const bulkMutation = useMutation({
+    mutationFn: ({ id, data }) => updateProduct(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+      enqueueSnackbar('Operación realizada con éxito', { variant: 'success' });
+    },
+    onError: (error) => {
+      enqueueSnackbar(
+        `Error al realizar la operación: ${error.response?.data?.detail || error.message}`,
+        { variant: 'error' }
+      );
+    },
+  });
 
-  // Manejar el filtrado de productos
-  const handleFilter = (newFilters) => {
+  // Manejar el filtrado de productos - optimizado con useCallback
+  const handleFilter = useCallback((newFilters) => {
     setFilters(newFilters);
-    setPagination({ ...pagination, page: 1 }); // Volver a la primera página al filtrar
-  };
+    setPagination(prev => ({ ...prev, page: 1 })); // Volver a la primera página al filtrar
+  }, []);
 
-  // Manejar cambio de página
-  const handlePageChange = (newPage) => {
-    setPagination({ ...pagination, page: newPage });
-  };
+  // Manejar cambio de página - optimizado con useCallback
+  const handlePageChange = useCallback((newPage) => {
+    setPagination(prev => ({ ...prev, page: newPage }));
+  }, []);
 
-  // Manejar cambio de límite por página
-  const handleLimitChange = (newLimit) => {
+  // Manejar cambio de límite por página - optimizado con useCallback
+  const handleLimitChange = useCallback((newLimit) => {
     setPagination({ page: 1, limit: newLimit });
-  };
+  }, []);
 
-  // Manejar operaciones masivas
-  const handleBulkAction = async (action, selectedIds) => {
+  // Manejar operaciones masivas - optimizado con useCallback
+  const handleBulkAction = useCallback(async (action, selectedIds) => {
     if (!selectedIds.length) return;
 
     const isActive = action === 'activate';
-    
+
     try {
       // Realizar operaciones en paralelo
       await Promise.all(
-        selectedIds.map(id => 
+        selectedIds.map(id =>
           bulkMutation.mutateAsync({ id, data: { is_active: isActive } })
         )
       );
     } catch (error) {
       console.error('Error en operación masiva:', error);
     }
-  };
+  }, [bulkMutation]);
 
-  // Función para crear un nuevo producto
-  const handleCreateProduct = () => {
+  // Función para crear un nuevo producto - optimizado con useCallback
+  const handleCreateProduct = useCallback(() => {
     navigate('/products/new');
-  };
+  }, [navigate]);
 
   if (error) {
     return (
-      <Alert severity="error" sx={{ mt: 2 }}>
-        Error al cargar productos: {error.message}
+      <Alert 
+        severity="error" 
+        sx={{ mt: 2 }}
+        variant="filled"
+      >
+        Error al cargar productos: {typeof error === 'object' ? error.message : error}
       </Alert>
     );
   }
@@ -115,9 +117,16 @@ const ProductsPage = () => {
   const totalProducts = data?.length || 0;
 
   return (
-    <Box>
+    <Box sx={{ width: '100%' }}>
       {/* Encabezado y breadcrumbs */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+      <Box sx={{ 
+        display: 'flex', 
+        flexDirection: { xs: 'column', sm: 'row' },
+        justifyContent: 'space-between', 
+        alignItems: { xs: 'flex-start', sm: 'center' }, 
+        gap: 2,
+        mb: 3 
+      }}>
         <Box>
           <Typography variant="h4" gutterBottom>
             Productos
@@ -134,13 +143,24 @@ const ProductsPage = () => {
           color="primary"
           startIcon={<AddIcon />}
           onClick={handleCreateProduct}
+          sx={{ alignSelf: { xs: 'flex-start', sm: 'auto' } }}
         >
           Nuevo Producto
         </Button>
       </Box>
 
       {/* Filtros */}
-      <ProductFilters onFilter={handleFilter} />
+      <Paper 
+        elevation={1} 
+        sx={{ 
+          p: 2, 
+          mb: 3, 
+          borderRadius: 2,
+          bgcolor: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.02)'
+        }}
+      >
+        <ProductFilters onFilter={handleFilter} />
+      </Paper>
 
       {/* Tabla de productos */}
       {isLoading && !data ? (
@@ -148,16 +168,24 @@ const ProductsPage = () => {
           <CircularProgress />
         </Box>
       ) : (
-        <ProductTable
-          products={data || []}
-          isLoading={isLoading}
-          totalCount={totalProducts}
-          page={pagination.page}
-          limit={pagination.limit}
-          onPageChange={handlePageChange}
-          onLimitChange={handleLimitChange}
-          onBulkAction={handleBulkAction}
-        />
+        <Paper 
+          elevation={1} 
+          sx={{ 
+            borderRadius: 2,
+            overflow: 'hidden'
+          }}
+        >
+          <ProductTable
+            products={data || []}
+            isLoading={isLoading}
+            totalCount={totalProducts}
+            page={pagination.page}
+            limit={pagination.limit}
+            onPageChange={handlePageChange}
+            onLimitChange={handleLimitChange}
+            onBulkAction={handleBulkAction}
+          />
+        </Paper>
       )}
     </Box>
   );

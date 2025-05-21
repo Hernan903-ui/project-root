@@ -119,7 +119,8 @@ const InventoryItemForm = ({ item, products, onClose }) => {
     <Box component="form" onSubmit={handleSubmit} sx={{ mt: 2 }}>
       <Grid container spacing={2}>
         {products && products.length > 0 && (
-          <Grid item xs={12}>
+          // Actualizado a Grid v2
+          <Grid gridColumn={{ xs: "span 12" }}>
             <FormControl fullWidth>
               <InputLabel id="product-select-label">Seleccionar Producto</InputLabel>
               <Select
@@ -140,7 +141,8 @@ const InventoryItemForm = ({ item, products, onClose }) => {
           </Grid>
         )}
         
-        <Grid item xs={12} sm={6}>
+        {/* Actualizado a Grid v2 */}
+        <Grid gridColumn={{ xs: "span 12", sm: "span 6" }}>
           <TextField
             required
             fullWidth
@@ -153,7 +155,8 @@ const InventoryItemForm = ({ item, products, onClose }) => {
           />
         </Grid>
         
-        <Grid item xs={12} sm={6}>
+        {/* Actualizado a Grid v2 */}
+        <Grid gridColumn={{ xs: "span 12", sm: "span 6" }}>
           <TextField
             required
             fullWidth
@@ -166,7 +169,8 @@ const InventoryItemForm = ({ item, products, onClose }) => {
           />
         </Grid>
         
-        <Grid item xs={12} sm={6}>
+        {/* Actualizado a Grid v2 */}
+        <Grid gridColumn={{ xs: "span 12", sm: "span 6" }}>
           <TextField
             fullWidth
             label="Categoría"
@@ -176,7 +180,8 @@ const InventoryItemForm = ({ item, products, onClose }) => {
           />
         </Grid>
         
-        <Grid item xs={12} sm={6}>
+        {/* Actualizado a Grid v2 */}
+        <Grid gridColumn={{ xs: "span 12", sm: "span 6" }}>
           <TextField
             fullWidth
             label="Ubicación"
@@ -186,7 +191,8 @@ const InventoryItemForm = ({ item, products, onClose }) => {
           />
         </Grid>
         
-        <Grid item xs={12} sm={6}>
+        {/* Actualizado a Grid v2 */}
+        <Grid gridColumn={{ xs: "span 12", sm: "span 6" }}>
           <TextField
             required
             fullWidth
@@ -200,7 +206,8 @@ const InventoryItemForm = ({ item, products, onClose }) => {
           />
         </Grid>
         
-        <Grid item xs={12} sm={6}>
+        {/* Actualizado a Grid v2 */}
+        <Grid gridColumn={{ xs: "span 12", sm: "span 6" }}>
           <TextField
             fullWidth
             label="Stock Mínimo"
@@ -213,7 +220,8 @@ const InventoryItemForm = ({ item, products, onClose }) => {
           />
         </Grid>
         
-        <Grid item xs={12}>
+        {/* Actualizado a Grid v2 */}
+        <Grid gridColumn={{ xs: "span 12" }}>
           <FormControl fullWidth>
             <InputLabel id="status-select-label">Estado</InputLabel>
             <Select
@@ -232,7 +240,8 @@ const InventoryItemForm = ({ item, products, onClose }) => {
           </FormControl>
         </Grid>
         
-        <Grid item xs={12}>
+        {/* Actualizado a Grid v2 */}
+        <Grid gridColumn={{ xs: "span 12" }}>
           <TextField
             fullWidth
             label="Notas"
@@ -245,12 +254,17 @@ const InventoryItemForm = ({ item, products, onClose }) => {
         </Grid>
         
         {error && (
-          <Grid item xs={12}>
+          // Actualizado a Grid v2
+          <Grid gridColumn={{ xs: "span 12" }}>
             <FormHelperText error>{error}</FormHelperText>
           </Grid>
         )}
         
-        <Grid item xs={12} sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mt: 2 }}>
+        {/* Actualizado a Grid v2 */}
+        <Grid 
+          gridColumn={{ xs: "span 12" }} 
+          sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mt: 2 }}
+        >
           <Button onClick={onClose} disabled={loading}>
             Cancelar
           </Button>

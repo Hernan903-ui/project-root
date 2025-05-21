@@ -1,6 +1,6 @@
-// src/utils/reportGenerator.js
-import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+// src/utils/reportGenerator.js - CÓDIGO CORREGIDO
+import { jsPDF } from 'jspdf'; // Cambiado de "import jsPDF" a "import { jsPDF }"
+import autoTable from 'jspdf-autotable'; // Importación explícita del módulo autoTable
 
 export const generatePDF = (title, data, columns, fileName = 'reporte.pdf') => {
   const doc = new jsPDF();
@@ -24,8 +24,8 @@ export const generatePDF = (title, data, columns, fileName = 'reporte.pdf') => {
     });
   });
   
-  // Generar tabla
-  doc.autoTable({
+  // Generar tabla - usando autoTable correctamente
+  autoTable(doc, {
     head: [tableColumn],
     body: tableRows,
     startY: 40,

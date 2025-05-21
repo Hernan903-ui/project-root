@@ -17,7 +17,8 @@ import {
   Chip,
   Divider,
   Menu,
-  MenuItem
+  MenuItem,
+  Alert
 } from '@mui/material';
 import {
   Edit as EditIcon,
@@ -32,6 +33,17 @@ import {
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import PurchaseOrderFilters from './PurchaseOrderFilters';
+
+// Función para formato seguro de fechas
+const formatDate = (dateString) => {
+  if (!dateString) return 'N/A';
+  try {
+    return format(new Date(dateString), 'dd/MM/yyyy', { locale: es });
+  } catch (error) {
+    console.error('Error formatting date:', dateString, error);
+    return 'Fecha inválida';
+  }
+};
 
 const getStatusChip = (status) => {
   switch (status) {
@@ -51,33 +63,56 @@ const getStatusChip = (status) => {
 };
 
 const PurchaseOrderList = ({
-  purchaseOrders,
-  totalItems,
-  loading,
-  onDelete,
-  onFilter,
-  page,
-  setPage,
-  rowsPerPage,
-  setRowsPerPage
+  purchaseOrders = [], // Valor por defecto para evitar undefined
+  totalItems = 0,
+  loading = false,
+  onDelete = () => {},
+  onFilter = () => {},
+  page = 0,
+  setPage = () => {},
+  rowsPerPage = 10,
+  setRowsPerPage = () => {},
+  isOfflineData = false
 }) => {
   const navigate = useNavigate();
   const [showFilters, setShowFilters] = useState(false);
   const [actionMenuAnchor, setActionMenuAnchor] = useState(null);
   const [selectedOrderId, setSelectedOrderId] = useState(null);
+  const [error, setError] = useState(null);
+
+  // Verificar que purchaseOrders sea un array
+  if (!Array.isArray(purchaseOrders)) {
+    console.error('purchaseOrders no es un array:', purchaseOrders);
+    // En lugar de devolver null o fallar, establecemos purchaseOrders como array vacío
+    purchaseOrders = [];
+  }
 
   const handleChangePage = (event, newPage) => {
-    setPage(newPage);
+    try {
+      setPage(newPage);
+    } catch (error) {
+      console.error('Error cambiando página:', error);
+      setError('Error al cambiar de página');
+    }
   };
 
   const handleChangeRowsPerPage = (event) => {
-    setRowsPerPage(parseInt(event.target.value, 10));
-    setPage(0);
+    try {
+      setRowsPerPage(parseInt(event.target.value, 10));
+      setPage(0);
+    } catch (error) {
+      console.error('Error cambiando filas por página:', error);
+      setError('Error al cambiar filas por página');
+    }
   };
 
   const handleOpenMenu = (event, orderId) => {
-    setActionMenuAnchor(event.currentTarget);
-    setSelectedOrderId(orderId);
+    try {
+      setActionMenuAnchor(event.currentTarget);
+      setSelectedOrderId(orderId);
+    } catch (error) {
+      console.error('Error abriendo menú:', error);
+    }
   };
 
   const handleCloseMenu = () => {
@@ -86,38 +121,75 @@ const PurchaseOrderList = ({
   };
 
   const goToOrderDetails = (id) => {
-    navigate(`/purchase-orders/${id}`);
+    try {
+      navigate(`/purchase-orders/${id}`);
+    } catch (error) {
+      console.error('Error navegando a detalles:', error);
+    }
   };
 
   const goToReceiveOrder = (id) => {
-    navigate(`/purchase-orders/${id}/receive`);
-    handleCloseMenu();
+    try {
+      navigate(`/purchase-orders/${id}/receive`);
+      handleCloseMenu();
+    } catch (error) {
+      console.error('Error navegando a recibir orden:', error);
+    }
   };
 
   const goToEditOrder = (id) => {
-    navigate(`/purchase-orders/edit/${id}`);
-    handleCloseMenu();
+    try {
+      navigate(`/purchase-orders/edit/${id}`);
+      handleCloseMenu();
+    } catch (error) {
+      console.error('Error navegando a editar orden:', error);
+    }
   };
 
   const handleDeleteOrder = (id) => {
-    onDelete(id);
-    handleCloseMenu();
+    try {
+      onDelete(id);
+      handleCloseMenu();
+    } catch (error) {
+      console.error('Error eliminando orden:', error);
+      setError('Error al intentar eliminar la orden');
+    }
   };
 
   const handlePrintOrder = (id) => {
-    // Implementar funcionalidad de impresión
-    console.log('Printing order:', id);
-    handleCloseMenu();
+    try {
+      console.log('Printing order:', id);
+      handleCloseMenu();
+    } catch (error) {
+      console.error('Error imprimiendo orden:', error);
+    }
   };
 
   const handleSendOrder = (id) => {
-    // Implementar funcionalidad de envío
-    console.log('Sending order:', id);
-    handleCloseMenu();
+    try {
+      console.log('Sending order:', id);
+      handleCloseMenu();
+    } catch (error) {
+      console.error('Error enviando orden:', error);
+    }
   };
+
+  // Buscar orden de forma segura para el menú de acciones
+  const findOrderById = (id) => {
+    if (!Array.isArray(purchaseOrders) || !id) return null;
+    return purchaseOrders.find(o => o && o.id === id) || null;
+  };
+
+  const selectedOrder = findOrderById(selectedOrderId);
 
   return (
     <Paper sx={{ width: '100%', overflow: 'hidden' }}>
+      {error && (
+        <Alert severity="error" sx={{ m: 2 }} onClose={() => setError(null)}>
+          {error}
+        </Alert>
+      )}
+      
       <Box sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <Typography variant="h6">Órdenes de Compra</Typography>
         <Box>
@@ -172,63 +244,75 @@ const PurchaseOrderList = ({
                 </TableCell>
               </TableRow>
             ) : (
-              purchaseOrders.map((order) => (
-                <TableRow hover key={order.id}>
-                  <TableCell>
-                    <Box sx={{ fontWeight: 'medium' }}>
-                      #{order.id}
-                    </Box>
-                  </TableCell>
-                  <TableCell>{order.supplierName}</TableCell>
-                  <TableCell>
-                    {order.orderDate 
-                      ? format(new Date(order.orderDate), 'dd/MM/yyyy', { locale: es }) 
-                      : 'N/A'
-                    }
-                  </TableCell>
-                  <TableCell>
-                    {order.expectedDeliveryDate 
-                      ? format(new Date(order.expectedDeliveryDate), 'dd/MM/yyyy', { locale: es }) 
-                      : 'No especificada'
-                    }
-                  </TableCell>
-                  <TableCell align="right">
-                    ${order.total.toFixed(2)}
-                  </TableCell>
-                  <TableCell align="center">
-                    {getStatusChip(order.status)}
-                  </TableCell>
-                  <TableCell align="right">
-                    <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
-                      <Tooltip title="Ver detalles">
-                        <IconButton size="small" onClick={() => goToOrderDetails(order.id)}>
-                          <ViewIcon />
-                        </IconButton>
-                      </Tooltip>
-                      
-                      {order.status !== 'cancelled' && order.status !== 'received' && (
-                        <Tooltip title="Recibir mercancía">
-                          <IconButton 
-                            size="small" 
-                            color="success" 
-                            onClick={() => goToReceiveOrder(order.id)}
-                          >
-                            <ShippingIcon />
+              purchaseOrders.map((order) => {
+                // Verificar que order es un objeto válido
+                if (!order || typeof order !== 'object') {
+                  console.error('Orden inválida en purchaseOrders:', order);
+                  return null;
+                }
+                
+                // Extraer valores con defaults para evitar errores
+                const { 
+                  id = 'N/A', 
+                  supplierName = 'Proveedor no disponible', 
+                  orderDate = null,
+                  expectedDeliveryDate = null,
+                  total = 0,
+                  status = 'unknown'
+                } = order;
+                
+                return (
+                  <TableRow hover key={id}>
+                    <TableCell>
+                      <Box sx={{ fontWeight: 'medium' }}>
+                        #{id}
+                      </Box>
+                    </TableCell>
+                    <TableCell>{supplierName}</TableCell>
+                    <TableCell>
+                      {formatDate(orderDate)}
+                    </TableCell>
+                    <TableCell>
+                      {formatDate(expectedDeliveryDate) || 'No especificada'}
+                    </TableCell>
+                    <TableCell align="right">
+                      ${typeof total === 'number' ? total.toFixed(2) : '0.00'}
+                    </TableCell>
+                    <TableCell align="center">
+                      {getStatusChip(status)}
+                    </TableCell>
+                    <TableCell align="right">
+                      <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+                        <Tooltip title="Ver detalles">
+                          <IconButton size="small" onClick={() => goToOrderDetails(id)}>
+                            <ViewIcon />
                           </IconButton>
                         </Tooltip>
-                      )}
-                      
-                      <IconButton 
-                        size="small"
-                        onClick={(e) => handleOpenMenu(e, order.id)}
-                        aria-label="más opciones"
-                      >
-                        <MoreVertIcon />
-                      </IconButton>
-                    </Box>
-                  </TableCell>
-                </TableRow>
-              ))
+                        
+                        {status !== 'cancelled' && status !== 'received' && (
+                          <Tooltip title="Recibir mercancía">
+                            <IconButton 
+                              size="small" 
+                              color="success" 
+                              onClick={() => goToReceiveOrder(id)}
+                            >
+                              <ShippingIcon />
+                            </IconButton>
+                          </Tooltip>
+                        )}
+                        
+                        <IconButton 
+                          size="small"
+                          onClick={(e) => handleOpenMenu(e, id)}
+                          aria-label="más opciones"
+                        >
+                          <MoreVertIcon />
+                        </IconButton>
+                      </Box>
+                    </TableCell>
+                  </TableRow>
+                );
+              }).filter(Boolean) // Filtrar elementos null si hay órdenes inválidas
             )}
           </TableBody>
         </Table>
@@ -264,8 +348,8 @@ const PurchaseOrderList = ({
           Ver detalles
         </MenuItem>
         
-        {purchaseOrders.find(o => o.id === selectedOrderId)?.status !== 'cancelled' && 
-        purchaseOrders.find(o => o.id === selectedOrderId)?.status !== 'received' && (
+        {selectedOrder && selectedOrder.status !== 'cancelled' && 
+        selectedOrder.status !== 'received' && (
           <>
             <MenuItem onClick={() => goToEditOrder(selectedOrderId)}>
               <EditIcon fontSize="small" sx={{ mr: 1 }} />
@@ -291,7 +375,7 @@ const PurchaseOrderList = ({
         
         <Divider />
         
-        {purchaseOrders.find(o => o.id === selectedOrderId)?.status === 'draft' && (
+        {selectedOrder && selectedOrder.status === 'draft' && (
           <MenuItem 
             onClick={() => handleDeleteOrder(selectedOrderId)}
             sx={{ color: 'error.main' }}

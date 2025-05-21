@@ -46,7 +46,8 @@ const SupplierFilters = ({ onFilter }) => {
   return (
     <Box component="form" onSubmit={handleSubmit} sx={{ p: 2 }}>
       <Grid container spacing={2} alignItems="center">
-        <Grid item xs={12} sm={4} md={3}>
+        {/* Actualizado a Grid v2 */}
+        <Grid gridColumn={{ xs: "span 12", sm: "span 4", md: "span 3" }}>
           <TextField
             fullWidth
             name="search"
@@ -72,7 +73,8 @@ const SupplierFilters = ({ onFilter }) => {
             }}
           />
         </Grid>
-        <Grid item xs={12} sm={4} md={2}>
+        {/* Actualizado a Grid v2 */}
+        <Grid gridColumn={{ xs: "span 12", sm: "span 4", md: "span 2" }}>
           <FormControl fullWidth size="small">
             <InputLabel id="status-select-label">Estado</InputLabel>
             <Select
@@ -89,7 +91,8 @@ const SupplierFilters = ({ onFilter }) => {
             </Select>
           </FormControl>
         </Grid>
-        <Grid item xs={12} sm={4} md={3}>
+        {/* Actualizado a Grid v2 */}
+        <Grid gridColumn={{ xs: "span 12", sm: "span 4", md: "span 3" }}>
           <FormControl fullWidth size="small">
             <InputLabel id="category-select-label">Categoría</InputLabel>
             <Select
@@ -110,7 +113,8 @@ const SupplierFilters = ({ onFilter }) => {
             </Select>
           </FormControl>
         </Grid>
-        <Grid item xs={12} sm={4} md={4}>
+        {/* Actualizado a Grid v2 */}
+        <Grid gridColumn={{ xs: "span 12", sm: "span 4", md: "span 4" }}>
           <Box sx={{ display: 'flex', gap: 1 }}>
             <Button
               type="submit"

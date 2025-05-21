@@ -67,7 +67,8 @@ const MovementsFilters = ({ onFilter }) => {
     <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={es}>
       <Box component="form" onSubmit={handleSubmit} sx={{ mb: 3 }}>
         <Grid container spacing={2} alignItems="center">
-          <Grid item xs={12} sm={6} md={4}>
+          {/* Actualizado a Grid v2 */}
+          <Grid gridColumn={{ xs: "span 12", sm: "span 6", md: "span 4" }}>
             <TextField
               fullWidth
               name="product_search"
@@ -84,7 +85,8 @@ const MovementsFilters = ({ onFilter }) => {
               size="small"
             />
           </Grid>
-          <Grid item xs={12} sm={6} md={8}>
+          {/* Actualizado a Grid v2 */}
+          <Grid gridColumn={{ xs: "span 12", sm: "span 6", md: "span 8" }}>
             <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
               <Button
                 variant="outlined"
@@ -116,7 +118,8 @@ const MovementsFilters = ({ onFilter }) => {
         <Collapse in={showFilters}>
           <Box sx={{ mt: 2 }}>
             <Grid container spacing={2}>
-              <Grid item xs={12} sm={6} md={3}>
+              {/* Actualizado a Grid v2 */}
+              <Grid gridColumn={{ xs: "span 12", sm: "span 6", md: "span 3" }}>
                 <FormControl fullWidth size="small">
                   <InputLabel id="movement-type-label">Tipo de Movimiento</InputLabel>
                   <Select
@@ -136,7 +139,8 @@ const MovementsFilters = ({ onFilter }) => {
                   </Select>
                 </FormControl>
               </Grid>
-              <Grid item xs={12} sm={6} md={3}>
+              {/* Actualizado a Grid v2 */}
+              <Grid gridColumn={{ xs: "span 12", sm: "span 6", md: "span 3" }}>
                 <DatePicker
                   label="Fecha Inicio"
                   value={filters.start_date}
@@ -146,7 +150,8 @@ const MovementsFilters = ({ onFilter }) => {
                   )}
                 />
               </Grid>
-              <Grid item xs={12} sm={6} md={3}>
+              {/* Actualizado a Grid v2 */}
+              <Grid gridColumn={{ xs: "span 12", sm: "span 6", md: "span 3" }}>
                 <DatePicker
                   label="Fecha Fin"
                   value={filters.end_date}

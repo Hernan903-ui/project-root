@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import {
   Paper,
   Typography,
-  Grid,
   TextField,
   Button,
   IconButton,
@@ -25,7 +24,9 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  Alert
 } from '@mui/material';
+import Grid from '@mui/material/Unstable_Grid2'; // Grid v2
 import {
   Add as AddIcon,
   Delete as DeleteIcon,
@@ -84,6 +85,7 @@ const PurchaseOrderForm = ({
   const [productSearchTerm, setProductSearchTerm] = useState('');
   const [filteredProducts, setFilteredProducts] = useState([]);
   const [formErrors, setFormErrors] = useState({});
+  const [touched, setTouched] = useState({});
 
   useEffect(() => {
     dispatch(fetchSuppliers());
@@ -91,33 +93,35 @@ const PurchaseOrderForm = ({
 
   useEffect(() => {
     if (initialData) {
-      setFormData({
+      setFormData(prevData => ({
+        ...prevData,
         ...initialData,
         orderDate: initialData.orderDate ? new Date(initialData.orderDate) : new Date(),
         expectedDeliveryDate: initialData.expectedDeliveryDate ? new Date(initialData.expectedDeliveryDate) : null,
-        items: initialData.items?.length > 0 ? initialData.items : [{ ...initialItem }]
-      });
+        items: initialData.items?.length > 0 ? initialData.items : [{ ...initialItem }],
+        shippingCost: initialData.shippingCost || 0
+      }));
       
       if (initialData.supplierId) {
         const supplier = suppliers.find(s => s.id === initialData.supplierId);
         setSelectedSupplier(supplier || null);
       }
-    } else if (initialSupplierId) {
+    } else if (initialSupplierId && suppliers.length > 0) {
       const supplier = suppliers.find(s => s.id === initialSupplierId);
       if (supplier) {
         setSelectedSupplier(supplier);
-        setFormData({
-          ...formData,
+        setFormData(prevData => ({
+          ...prevData,
           supplierId: supplier.id,
           supplierName: supplier.name,
           paymentTerms: supplier.paymentTerms || ''
-        });
+        }));
       }
     }
   }, [initialData, suppliers, initialSupplierId]);
 
   useEffect(() => {
-    // Recalcular totales cada vez que cambian los items
+    // Recalcular totales cada vez que cambian los items o el costo de envío
     calculateTotals();
   }, [formData.items, formData.shippingCost]);
 
@@ -139,7 +143,8 @@ const PurchaseOrderForm = ({
       discountAmount += itemDiscountAmount;
     });
 
-    const total = subtotal + taxAmount - discountAmount + parseFloat(formData.shippingCost || 0);
+    const shippingCost = parseFloat(formData.shippingCost || 0);
+    const total = subtotal + taxAmount - discountAmount + shippingCost;
 
     setFormData(prev => ({
       ...prev,
@@ -153,59 +158,97 @@ const PurchaseOrderForm = ({
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData({
-      ...formData,
+    
+    setFormData(prevData => ({
+      ...prevData,
       [name]: value
-    });
+    }));
+
+    // Marcar campo como tocado
+    setTouched(prevTouched => ({
+      ...prevTouched,
+      [name]: true
+    }));
 
     if (formErrors[name]) {
-      setFormErrors({
-        ...formErrors,
+      setFormErrors(prevErrors => ({
+        ...prevErrors,
         [name]: null
-      });
+      }));
     }
   };
 
   const handleDateChange = (date, name) => {
-    setFormData({
-      ...formData,
+    setFormData(prevData => ({
+      ...prevData,
       [name]: date
-    });
+    }));
+    
+    // Marcar campo como tocado
+    setTouched(prevTouched => ({
+      ...prevTouched,
+      [name]: true
+    }));
+    
+    if (formErrors[name]) {
+      setFormErrors(prevErrors => ({
+        ...prevErrors,
+        [name]: null
+      }));
+    }
   };
 
   const handleSupplierChange = (event, newValue) => {
     setSelectedSupplier(newValue);
+    
+    setTouched(prevTouched => ({
+      ...prevTouched,
+      supplierId: true
+    }));
+    
     if (newValue) {
-      setFormData({
-        ...formData,
+      setFormData(prevData => ({
+        ...prevData,
         supplierId: newValue.id,
         supplierName: newValue.name,
         paymentTerms: newValue.paymentTerms || ''
-      });
+      }));
+      
+      if (formErrors.supplierId) {
+        setFormErrors(prevErrors => ({
+          ...prevErrors,
+          supplierId: null
+        }));
+      }
     } else {
-      setFormData({
-        ...formData,
+      setFormData(prevData => ({
+        ...prevData,
         supplierId: '',
         supplierName: '',
         paymentTerms: ''
-      });
+      }));
     }
   };
 
   const handleAddItem = () => {
-    setFormData({
-      ...formData,
-      items: [...formData.items, { ...initialItem }]
-    });
+    setFormData(prevData => ({
+      ...prevData,
+      items: [...prevData.items, { ...initialItem }]
+    }));
   };
 
   const handleRemoveItem = (index) => {
     const items = [...formData.items];
     items.splice(index, 1);
-    setFormData({
-      ...formData,
+    
+    setFormData(prevData => ({
+      ...prevData,
       items: items.length ? items : [{ ...initialItem }]
-    });
+    }));
+    
+    if (formErrors.items) {
+      validateItems(items);
+    }
   };
 
   const handleItemChange = (index, field, value) => {
@@ -215,10 +258,30 @@ const PurchaseOrderForm = ({
       [field]: value
     };
     
-    setFormData({
-      ...formData,
+    setFormData(prevData => ({
+      ...prevData,
       items
+    }));
+    
+    if (formErrors.items) {
+      validateItems(items);
+    }
+  };
+
+  const validateItems = (items) => {
+    let hasValidItems = true;
+    items.forEach(item => {
+      if (!item.productId || !item.quantity || item.quantity <= 0) {
+        hasValidItems = false;
+      }
     });
+    
+    setFormErrors(prevErrors => ({
+      ...prevErrors,
+      items: hasValidItems ? null : 'Todos los productos deben tener un ID, nombre y cantidad válida'
+    }));
+    
+    return hasValidItems;
   };
 
   const openProductSelection = (index) => {
@@ -239,8 +302,8 @@ const PurchaseOrderForm = ({
     
     const filtered = products.filter(product => 
       product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.sku?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.barcode?.toLowerCase().includes(searchTerm.toLowerCase())
+      (product.sku?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+      (product.barcode?.toLowerCase() || '').includes(searchTerm.toLowerCase())
     );
     
     setFilteredProducts(filtered);
@@ -259,15 +322,28 @@ const PurchaseOrderForm = ({
       total: product.purchasePrice || product.price || 0
     };
     
-    setFormData({
-      ...formData,
+    setFormData(prevData => ({
+      ...prevData,
       items
-    });
+    }));
+    
+    if (formErrors.items) {
+      validateItems(items);
+    }
     
     setOpenProductDialog(false);
   };
 
   const validateForm = () => {
+    // Marcar todos los campos como tocados
+    const allTouched = {
+      supplierId: true,
+      orderDate: true,
+      items: true,
+      ...touched
+    };
+    setTouched(allTouched);
+    
     const errors = {};
     
     if (!formData.supplierId) {
@@ -278,14 +354,7 @@ const PurchaseOrderForm = ({
       errors.orderDate = 'La fecha de orden es requerida';
     }
     
-    let hasValidItems = true;
-    formData.items.forEach((item, index) => {
-      if (!item.productId || !item.quantity || item.quantity <= 0) {
-        hasValidItems = false;
-      }
-    });
-    
-    if (!hasValidItems) {
+    if (!validateItems(formData.items)) {
       errors.items = 'Todos los productos deben tener un ID, nombre y cantidad válida';
     }
     
@@ -308,8 +377,14 @@ const PurchaseOrderForm = ({
       </Typography>
       <Divider sx={{ mb: 3 }} />
 
+      {error && (
+        <Alert severity="error" sx={{ mb: 3 }}>
+          {typeof error === 'object' ? (error?.detail || error?.message || 'Ha ocurrido un error') : error}
+        </Alert>
+      )}
+
       <Grid container spacing={3}>
-        <Grid item xs={12} md={6}>
+        <Grid xs={12} md={6}>
           <Autocomplete
             id="supplier-select"
             options={suppliers || []}
@@ -322,44 +397,45 @@ const PurchaseOrderForm = ({
                 {...params}
                 label="Proveedor"
                 required
-                error={!!formErrors.supplierId}
-                helperText={formErrors.supplierId}
+                error={touched.supplierId && !!formErrors.supplierId}
+                helperText={touched.supplierId && formErrors.supplierId}
               />
             )}
           />
         </Grid>
-        <Grid item xs={12} md={3}>
+        <Grid xs={12} md={3}>
           <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={es}>
             <DatePicker
               label="Fecha de Orden"
               value={formData.orderDate}
               onChange={(date) => handleDateChange(date, 'orderDate')}
-              renderInput={(params) => (
-                <TextField
-                  {...params}
-                  fullWidth
-                  required
-                  error={!!formErrors.orderDate}
-                  helperText={formErrors.orderDate}
-                />
-              )}
+              slotProps={{
+                textField: {
+                  fullWidth: true,
+                  required: true,
+                  error: touched.orderDate && !!formErrors.orderDate,
+                  helperText: touched.orderDate && formErrors.orderDate
+                }
+              }}
             />
           </LocalizationProvider>
         </Grid>
-        <Grid item xs={12} md={3}>
+        <Grid xs={12} md={3}>
           <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={es}>
             <DatePicker
               label="Fecha Estimada de Entrega"
               value={formData.expectedDeliveryDate}
               onChange={(date) => handleDateChange(date, 'expectedDeliveryDate')}
-              renderInput={(params) => (
-                <TextField {...params} fullWidth />
-              )}
+              slotProps={{
+                textField: {
+                  fullWidth: true
+                }
+              }}
             />
           </LocalizationProvider>
         </Grid>
 
-        <Grid item xs={12} md={6}>
+        <Grid xs={12} md={6}>
           <FormControl fullWidth>
             <InputLabel id="status-label">Estado</InputLabel>
             <Select
@@ -377,7 +453,7 @@ const PurchaseOrderForm = ({
             </Select>
           </FormControl>
         </Grid>
-        <Grid item xs={12} md={6}>
+        <Grid xs={12} md={6}>
           <TextField
             fullWidth
             label="Términos de Pago"
@@ -388,14 +464,14 @@ const PurchaseOrderForm = ({
           />
         </Grid>
 
-        <Grid item xs={12}>
+        <Grid xs={12} sx={{ mt: 2 }}>
           <Typography variant="subtitle1" gutterBottom>
             Productos
           </Typography>
           <Divider sx={{ mb: 2 }} />
         </Grid>
 
-        <Grid item xs={12}>
+        <Grid xs={12}>
           <TableContainer>
             <Table>
               <TableHead>
@@ -411,7 +487,7 @@ const PurchaseOrderForm = ({
               </TableHead>
               <TableBody>
                 {formData.items.map((item, index) => (
-                  <TableRow key={index}>
+                  <TableRow key={index} hover>
                     <TableCell>
                       <TextField
                         fullWidth
@@ -427,6 +503,7 @@ const PurchaseOrderForm = ({
                                 edge="end"
                                 onClick={() => openProductSelection(index)}
                                 size="small"
+                                aria-label="buscar producto"
                               >
                                 <SearchIcon />
                               </IconButton>
@@ -442,7 +519,10 @@ const PurchaseOrderForm = ({
                         size="small"
                         value={item.quantity}
                         onChange={(e) => handleItemChange(index, 'quantity', Math.max(1, parseInt(e.target.value) || 0))}
-                        InputProps={{ inputProps: { min: 1 } }}
+                        InputProps={{ 
+                          inputProps: { min: 1, 'aria-label': 'cantidad' }
+                        }}
+                        sx={{ width: 80 }}
                       />
                     </TableCell>
                     <TableCell align="right">
@@ -451,7 +531,10 @@ const PurchaseOrderForm = ({
                         size="small"
                         value={item.unitPrice}
                         onChange={(e) => handleItemChange(index, 'unitPrice', parseFloat(e.target.value) || 0)}
-                        InputProps={{ inputProps: { min: 0, step: 0.01 } }}
+                        InputProps={{ 
+                          inputProps: { min: 0, step: 0.01, 'aria-label': 'precio unitario' }
+                        }}
+                        sx={{ width: 100 }}
                       />
                     </TableCell>
                     <TableCell align="right">
@@ -460,7 +543,10 @@ const PurchaseOrderForm = ({
                         size="small"
                         value={item.tax}
                         onChange={(e) => handleItemChange(index, 'tax', parseFloat(e.target.value) || 0)}
-                        InputProps={{ inputProps: { min: 0, max: 100, step: 0.01 } }}
+                        InputProps={{ 
+                          inputProps: { min: 0, max: 100, step: 0.01, 'aria-label': 'impuesto' }
+                        }}
+                        sx={{ width: 80 }}
                       />
                     </TableCell>
                     <TableCell align="right">
@@ -469,17 +555,22 @@ const PurchaseOrderForm = ({
                         size="small"
                         value={item.discount}
                         onChange={(e) => handleItemChange(index, 'discount', parseFloat(e.target.value) || 0)}
-                        InputProps={{ inputProps: { min: 0, max: 100, step: 0.01 } }}
+                        InputProps={{ 
+                          inputProps: { min: 0, max: 100, step: 0.01, 'aria-label': 'descuento' }
+                        }}
+                        sx={{ width: 80 }}
                       />
                     </TableCell>
                     <TableCell align="right">
-                      {item.total.toFixed(2)}
+                      ${item.total.toFixed(2)}
                     </TableCell>
                     <TableCell align="center">
                       <IconButton
                         color="error"
                         onClick={() => handleRemoveItem(index)}
                         disabled={formData.items.length === 1}
+                        aria-label="eliminar producto"
+                        size="small"
                       >
                         <DeleteIcon />
                       </IconButton>
@@ -490,7 +581,7 @@ const PurchaseOrderForm = ({
             </Table>
           </TableContainer>
           
-          <Box sx={{ mt: 2, display: 'flex', justifyContent: 'space-between' }}>
+          <Box sx={{ mt: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <Button
               variant="outlined"
               startIcon={<AddIcon />}
@@ -507,7 +598,7 @@ const PurchaseOrderForm = ({
           </Box>
         </Grid>
 
-        <Grid item xs={12} md={6}>
+        <Grid xs={12} md={6}>
           <TextField
             fullWidth
             label="Notas"
@@ -516,46 +607,50 @@ const PurchaseOrderForm = ({
             onChange={handleChange}
             multiline
             rows={4}
+            placeholder="Información adicional, instrucciones especiales, etc."
           />
         </Grid>
 
-        <Grid item xs={12} md={6}>
-          <Paper variant="outlined" sx={{ p: 2 }}>
+        <Grid xs={12} md={6}>
+          <Paper 
+            variant="outlined" 
+            sx={{ p: 2, height: '100%', display: 'flex', flexDirection: 'column' }}
+          >
             <Typography variant="subtitle1" gutterBottom>
               Resumen de la Orden
             </Typography>
-            <Grid container spacing={2}>
-              <Grid item xs={6}>
+            <Grid container spacing={2} sx={{ flexGrow: 1 }}>
+              <Grid xs={6}>
                 <Typography variant="body2">Subtotal:</Typography>
               </Grid>
-              <Grid item xs={6}>
+              <Grid xs={6}>
                 <Typography variant="body2" align="right">
-                  {formData.subtotal.toFixed(2)}
+                  ${formData.subtotal.toFixed(2)}
                 </Typography>
               </Grid>
               
-              <Grid item xs={6}>
+              <Grid xs={6}>
                 <Typography variant="body2">Impuestos:</Typography>
               </Grid>
-              <Grid item xs={6}>
+              <Grid xs={6}>
                 <Typography variant="body2" align="right">
-                  {formData.taxAmount.toFixed(2)}
+                  ${formData.taxAmount.toFixed(2)}
                 </Typography>
               </Grid>
               
-              <Grid item xs={6}>
+              <Grid xs={6}>
                 <Typography variant="body2">Descuentos:</Typography>
               </Grid>
-              <Grid item xs={6}>
+              <Grid xs={6}>
                 <Typography variant="body2" align="right">
-                  {formData.discountAmount.toFixed(2)}
+                  ${formData.discountAmount.toFixed(2)}
                 </Typography>
               </Grid>
               
-              <Grid item xs={6}>
+              <Grid xs={6}>
                 <Typography variant="body2">Costo de Envío:</Typography>
               </Grid>
-              <Grid item xs={6}>
+              <Grid xs={6}>
                 <TextField
                   type="number"
                   size="small"
@@ -566,35 +661,30 @@ const PurchaseOrderForm = ({
                     inputProps: { min: 0, step: 0.01 },
                     sx: { textAlign: 'right' }
                   }}
+                  sx={{ width: '100%' }}
                 />
               </Grid>
               
-              <Grid item xs={12}>
+                            <Grid xs={12}>
                 <Divider sx={{ my: 1 }} />
               </Grid>
               
-              <Grid item xs={6}>
+              <Grid xs={6}>
                 <Typography variant="subtitle1" fontWeight="bold">
                   Total:
                 </Typography>
               </Grid>
-              <Grid item xs={6}>
+              <Grid xs={6}>
                 <Typography variant="subtitle1" fontWeight="bold" align="right">
-                  {formData.total.toFixed(2)}
+                  ${formData.total.toFixed(2)}
                 </Typography>
               </Grid>
             </Grid>
           </Paper>
         </Grid>
 
-        {error && (
-          <Grid item xs={12}>
-            <Typography color="error">{error}</Typography>
-          </Grid>
-        )}
-
-        <Grid item xs={12}>
-          <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
+        <Grid xs={12}>
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mt: 3 }}>
             <Button
               variant="outlined"
               startIcon={<CancelIcon />}
@@ -607,16 +697,16 @@ const PurchaseOrderForm = ({
               type="submit"
               variant="contained"
               color="primary"
-              startIcon={loading ? <CircularProgress size={24} /> : <SaveIcon />}
+              startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <SaveIcon />}
               disabled={loading}
             >
-              {initialData ? 'Actualizar' : 'Guardar'}
+              {loading ? (initialData ? 'Actualizando...' : 'Guardando...') : (initialData ? 'Actualizar' : 'Guardar')}
             </Button>
           </Box>
         </Grid>
       </Grid>
 
-            {/* Diálogo para selección de productos */}
+      {/* Diálogo para selección de productos */}
       <Dialog open={openProductDialog} onClose={() => setOpenProductDialog(false)} maxWidth="md" fullWidth>
         <DialogTitle>Seleccionar Producto</DialogTitle>
         <DialogContent>
@@ -662,7 +752,7 @@ const PurchaseOrderForm = ({
                       <TableCell>{product.name}</TableCell>
                       <TableCell>{product.sku || 'N/A'}</TableCell>
                       <TableCell align="right">
-                        {(product.purchasePrice || product.price || 0).toFixed(2)}
+                        ${(product.purchasePrice || product.price || 0).toFixed(2)}
                       </TableCell>
                       <TableCell align="right">
                         {product.stockQuantity || 0}

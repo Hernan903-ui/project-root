@@ -1,3 +1,4 @@
+//src/components/customers/CustomerForm.js
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import {
@@ -11,8 +12,8 @@ import {
   Typography,
   Divider
 } from '@mui/material';
+import GridItem from '../common/GridItem'; // Importamos el componente GridItem personalizado
 import { createCustomer, updateCustomer, clearCustomerState } from '../../features/customers/customerSlice';
-
 
 // Opciones para el tipo de cliente
 const customerTypes = [
@@ -138,7 +139,7 @@ const CustomerForm = ({ customer, onClose }) => {
     <Box component="form" onSubmit={handleSubmit} noValidate sx={{ mt: 1 }}>
       {error && (
         <Alert severity="error" sx={{ mb: 2 }}>
-          {error}
+          {typeof error === 'object' ? error.message : error}
         </Alert>
       )}
       
@@ -149,7 +150,7 @@ const CustomerForm = ({ customer, onClose }) => {
       )}
       
       <Grid container spacing={2}>
-        <Grid item xs={12} sm={6}>
+        <GridItem xs={12} sm={6}>
           <TextField
             name="name"
             label="Nombre completo"
@@ -160,9 +161,9 @@ const CustomerForm = ({ customer, onClose }) => {
             error={!!validationErrors.name}
             helperText={validationErrors.name}
           />
-        </Grid>
+        </GridItem>
         
-        <Grid item xs={12} sm={6}>
+        <GridItem xs={12} sm={6}>
           <TextField
             select
             name="type"
@@ -177,9 +178,9 @@ const CustomerForm = ({ customer, onClose }) => {
               </MenuItem>
             ))}
           </TextField>
-        </Grid>
+        </GridItem>
         
-        <Grid item xs={12} sm={6}>
+        <GridItem xs={12} sm={6}>
           <TextField
             name="email"
             label="Email"
@@ -190,9 +191,9 @@ const CustomerForm = ({ customer, onClose }) => {
             error={!!validationErrors.email}
             helperText={validationErrors.email}
           />
-        </Grid>
+        </GridItem>
         
-        <Grid item xs={12} sm={6}>
+        <GridItem xs={12} sm={6}>
           <TextField
             name="phone"
             label="Teléfono"
@@ -202,9 +203,9 @@ const CustomerForm = ({ customer, onClose }) => {
             error={!!validationErrors.phone}
             helperText={validationErrors.phone}
           />
-        </Grid>
+        </GridItem>
         
-        <Grid item xs={12} sm={6}>
+        <GridItem xs={12} sm={6}>
           <TextField
             select
             name="documentType"
@@ -218,9 +219,9 @@ const CustomerForm = ({ customer, onClose }) => {
             <MenuItem value="ruc">RUC</MenuItem>
             <MenuItem value="other">Otro</MenuItem>
           </TextField>
-        </Grid>
+        </GridItem>
         
-        <Grid item xs={12} sm={6}>
+        <GridItem xs={12} sm={6}>
           <TextField
             name="document"
             label="Número de documento"
@@ -228,18 +229,18 @@ const CustomerForm = ({ customer, onClose }) => {
             onChange={handleChange}
             fullWidth
           />
-        </Grid>
+        </GridItem>
         
         {formData.type === 'business' && (
           <>
-            <Grid item xs={12}>
+            <GridItem xs={12}>
               <Divider sx={{ my: 1 }} />
               <Typography variant="subtitle1" gutterBottom>
                 Información de empresa
               </Typography>
-            </Grid>
+            </GridItem>
             
-            <Grid item xs={12} sm={6}>
+            <GridItem xs={12} sm={6}>
               <TextField
                 name="companyName"
                 label="Nombre de empresa"
@@ -249,9 +250,9 @@ const CustomerForm = ({ customer, onClose }) => {
                 error={!!validationErrors.companyName}
                 helperText={validationErrors.companyName}
               />
-            </Grid>
+            </GridItem>
             
-            <Grid item xs={12} sm={6}>
+            <GridItem xs={12} sm={6}>
               <TextField
                 name="companyTaxId"
                 label="RUC / ID Fiscal"
@@ -259,18 +260,18 @@ const CustomerForm = ({ customer, onClose }) => {
                 onChange={handleChange}
                 fullWidth
               />
-            </Grid>
+            </GridItem>
           </>
         )}
         
-        <Grid item xs={12}>
+        <GridItem xs={12}>
           <Divider sx={{ my: 1 }} />
           <Typography variant="subtitle1" gutterBottom>
             Dirección
           </Typography>
-        </Grid>
+        </GridItem>
         
-        <Grid item xs={12}>
+        <GridItem xs={12}>
           <TextField
             name="address"
             label="Dirección"
@@ -278,9 +279,9 @@ const CustomerForm = ({ customer, onClose }) => {
             onChange={handleChange}
             fullWidth
           />
-        </Grid>
+        </GridItem>
         
-        <Grid item xs={12} sm={4}>
+        <GridItem xs={12} sm={4}>
           <TextField
             name="city"
             label="Ciudad"
@@ -288,9 +289,9 @@ const CustomerForm = ({ customer, onClose }) => {
             onChange={handleChange}
             fullWidth
           />
-        </Grid>
+        </GridItem>
         
-        <Grid item xs={12} sm={4}>
+        <GridItem xs={12} sm={4}>
           <TextField
             name="state"
             label="Provincia/Estado"
@@ -298,9 +299,9 @@ const CustomerForm = ({ customer, onClose }) => {
             onChange={handleChange}
             fullWidth
           />
-        </Grid>
+        </GridItem>
         
-        <Grid item xs={12} sm={4}>
+        <GridItem xs={12} sm={4}>
           <TextField
             name="zipCode"
             label="Código Postal"
@@ -308,17 +309,17 @@ const CustomerForm = ({ customer, onClose }) => {
             onChange={handleChange}
             fullWidth
           />
-        </Grid>
+        </GridItem>
         
-        <Grid item xs={12}>
+        <GridItem xs={12}>
           <Divider sx={{ my: 1 }} />
           <Typography variant="subtitle1" gutterBottom>
             Información adicional
           </Typography>
-        </Grid>
+        </GridItem>
         
         {formData.type === 'individual' && (
-          <Grid item xs={12} sm={6}>
+          <GridItem xs={12} sm={6}>
             <TextField
               name="birthdate"
               label="Fecha de nacimiento"
@@ -330,10 +331,10 @@ const CustomerForm = ({ customer, onClose }) => {
                 shrink: true,
               }}
             />
-          </Grid>
+          </GridItem>
         )}
         
-        <Grid item xs={12}>
+        <GridItem xs={12}>
           <TextField
             name="notes"
             label="Notas"
@@ -343,7 +344,7 @@ const CustomerForm = ({ customer, onClose }) => {
             multiline
             rows={3}
           />
-        </Grid>
+        </GridItem>
       </Grid>
       
       <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-end' }}>

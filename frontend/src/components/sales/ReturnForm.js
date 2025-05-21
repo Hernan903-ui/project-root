@@ -5,7 +5,6 @@ import {
   Divider,
   TextField,
   Button,
-  Grid,
   Checkbox,
   FormControlLabel,
   Table,
@@ -16,8 +15,10 @@ import {
   TableRow,
   Paper,
   Alert,
-  CircularProgress
+  CircularProgress,
+  Grid
 } from '@mui/material';
+import GridItem from '../common/GridItem'; // Importamos el componente GridItem personalizado
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -48,26 +49,27 @@ const ReturnForm = ({ sale, onSubmit, loading, error }) => {
   const handleReturnQuantityChange = (index, value) => {
     const newQuantity = Math.min(Math.max(0, parseInt(value) || 0), returnItems[index].maxQuantity);
     
-    const updatedItems = [...returnItems];
-    updatedItems[index] = {
-      ...updatedItems[index],
-      returnQuantity: newQuantity,
-      returnAmount: newQuantity * updatedItems[index].price
-    };
-    
-    setReturnItems(updatedItems);
+    setReturnItems(prevItems => {
+      const updatedItems = [...prevItems];
+      updatedItems[index] = {
+        ...updatedItems[index],
+        returnQuantity: newQuantity,
+        returnAmount: newQuantity * updatedItems[index].price
+      };
+      return updatedItems;
+    });
   };
 
   const handleSelectAll = (e) => {
     const isChecked = e.target.checked;
     
-    const updatedItems = returnItems.map(item => ({
-      ...item,
-      returnQuantity: isChecked ? item.maxQuantity : 0,
-      returnAmount: isChecked ? item.maxQuantity * item.price : 0
-    }));
-    
-    setReturnItems(updatedItems);
+    setReturnItems(prevItems => 
+      prevItems.map(item => ({
+        ...item,
+        returnQuantity: isChecked ? item.maxQuantity : 0,
+        returnAmount: isChecked ? item.maxQuantity * item.price : 0
+      }))
+    );
   };
 
   const handleReasonChange = (e) => {
@@ -103,7 +105,7 @@ const ReturnForm = ({ sale, onSubmit, loading, error }) => {
 
   const isSubmitDisabled = totalReturn === 0 || !reason.trim() || loading;
 
-    // Formatear fecha
+  // Formatear fecha
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
     try {
@@ -116,7 +118,7 @@ const ReturnForm = ({ sale, onSubmit, loading, error }) => {
   if (!sale) return null;
 
   return (
-    <Box>
+    <Box sx={{ width: '100%' }}>
       <Typography variant="h6" gutterBottom>
         Procesar Devolución - Venta #{sale.receiptNumber || sale.id}
       </Typography>
@@ -126,7 +128,7 @@ const ReturnForm = ({ sale, onSubmit, loading, error }) => {
       
       {error && (
         <Alert severity="error" sx={{ my: 2 }}>
-          {error}
+          {typeof error === 'object' ? (error?.detail || error?.message || 'Error al procesar devolución') : error}
         </Alert>
       )}
 
@@ -137,7 +139,7 @@ const ReturnForm = ({ sale, onSubmit, loading, error }) => {
           control={
             <Checkbox 
               onChange={handleSelectAll}
-              checked={returnItems.every(item => item.returnQuantity === item.maxQuantity)}
+              checked={returnItems.length > 0 && returnItems.every(item => item.returnQuantity === item.maxQuantity)}
               indeterminate={
                 returnItems.some(item => item.returnQuantity > 0) && 
                 !returnItems.every(item => item.returnQuantity === item.maxQuantity)
@@ -147,7 +149,7 @@ const ReturnForm = ({ sale, onSubmit, loading, error }) => {
           label="Seleccionar todos los productos"
         />
         
-        <TableContainer component={Paper} variant="outlined">
+        <TableContainer component={Paper} variant="outlined" sx={{ mt: 1 }}>
           <Table size="small">
             <TableHead>
               <TableRow>
@@ -160,7 +162,7 @@ const ReturnForm = ({ sale, onSubmit, loading, error }) => {
             </TableHead>
             <TableBody>
               {returnItems.map((item, index) => (
-                <TableRow key={index}>
+                <TableRow key={index} hover>
                   <TableCell>{item.name}</TableCell>
                   <TableCell align="right">${item.price.toFixed(2)}</TableCell>
                   <TableCell align="right">{item.maxQuantity}</TableCell>
@@ -171,7 +173,8 @@ const ReturnForm = ({ sale, onSubmit, loading, error }) => {
                       inputProps={{ 
                         min: 0, 
                         max: item.maxQuantity,
-                        style: { textAlign: 'right' }
+                        style: { textAlign: 'right' },
+                        'aria-label': `Cantidad a devolver de ${item.name}`
                       }}
                       value={item.returnQuantity}
                       onChange={(e) => handleReturnQuantityChange(index, e.target.value)}
@@ -188,8 +191,10 @@ const ReturnForm = ({ sale, onSubmit, loading, error }) => {
         </TableContainer>
       </Box>
       
+      {/* Usamos Grid normal para el contenedor */}
       <Grid container spacing={2}>
-        <Grid item xs={12} md={8}>
+        {/* Y GridItem para cada elemento hijo */}
+        <GridItem xs={12} md={8}>
           <TextField
             label="Motivo de la devolución"
             multiline
@@ -199,9 +204,11 @@ const ReturnForm = ({ sale, onSubmit, loading, error }) => {
             onChange={handleReasonChange}
             placeholder="Indique el motivo de la devolución"
             required
+            error={reason.trim() === '' && totalReturn > 0}
+            helperText={reason.trim() === '' && totalReturn > 0 ? "El motivo es requerido para procesar la devolución" : ""}
           />
-        </Grid>
-        <Grid item xs={12} md={4}>
+        </GridItem>
+        <GridItem xs={12} md={4}>
           <Paper variant="outlined" sx={{ p: 2 }}>
             <Typography variant="subtitle2" gutterBottom>
               Resumen de devolución
@@ -226,7 +233,7 @@ const ReturnForm = ({ sale, onSubmit, loading, error }) => {
               </Typography>
             </Box>
           </Paper>
-        </Grid>
+        </GridItem>
       </Grid>
       
       <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-end' }}>
@@ -235,7 +242,7 @@ const ReturnForm = ({ sale, onSubmit, loading, error }) => {
           color="primary"
           disabled={isSubmitDisabled}
           onClick={handleSubmit}
-          startIcon={loading ? <CircularProgress size={20} /> : null}
+          startIcon={loading ? <CircularProgress size={20} color="inherit" /> : null}
         >
           {loading ? 'Procesando...' : 'Procesar Devolución'}
         </Button>

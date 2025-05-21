@@ -2,13 +2,12 @@ import React from 'react';
 import {
   Box,
   Paper,
-  Grid,
   Card,
   CardContent,
   CardActionArea,
-  Typography,
-  Icon
+  Typography
 } from '@mui/material';
+import { Grid } from '@mui/material';
 import {
   PointOfSale as SalesIcon,
   Inventory as InventoryIcon,
@@ -51,13 +50,18 @@ const ReportTypeSelector = ({ onSelectReportType, selectedReportType }) => {
       </Typography>
       <Grid container spacing={2}>
         {reportTypes.map((report) => (
-          <Grid item xs={12} sm={6} md={3} key={report.id}>
+          <Grid gridColumn={{ xs: 'span 12', sm: 'span 6', md: 'span 3' }} key={report.id}>
             <Card 
               variant="outlined"
               sx={{ 
                 height: '100%',
                 borderColor: selectedReportType === report.id ? 'primary.main' : 'divider',
-                bgcolor: selectedReportType === report.id ? 'primary.lighter' : 'background.paper'
+                bgcolor: selectedReportType === report.id ? 'primary.lighter' : 'background.paper',
+                transition: 'all 0.2s ease-in-out',
+                '&:hover': {
+                  boxShadow: 3,
+                  borderColor: 'primary.light'
+                }
               }}
             >
               <CardActionArea 

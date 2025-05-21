@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 import subprocess
 import os
 import datetime
+from typing import Any  # Añadida importación de Any
 from ...database import get_db
 from ...api.routes.auth import get_current_active_user
 from ...config import settings

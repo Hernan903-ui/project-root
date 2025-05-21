@@ -49,7 +49,8 @@ const InventoryFilters = ({ filters, onFilterChange, categories = [] }) => {
         Filtros Avanzados
       </Typography>
       <Grid container spacing={2} alignItems="center">
-        <Grid item xs={12} sm={3}>
+        {/* Actualizado a Grid v2 */}
+        <Grid gridColumn={{ xs: "span 12", sm: "span 3" }}>
           <FormControl fullWidth size="small">
             <InputLabel id="category-filter-label">Categoría</InputLabel>
             <Select
@@ -70,7 +71,8 @@ const InventoryFilters = ({ filters, onFilterChange, categories = [] }) => {
           </FormControl>
         </Grid>
         
-        <Grid item xs={12} sm={2}>
+        {/* Actualizado a Grid v2 */}
+        <Grid gridColumn={{ xs: "span 12", sm: "span 2" }}>
           <TextField
             fullWidth
             label="Stock Mínimo"
@@ -82,7 +84,8 @@ const InventoryFilters = ({ filters, onFilterChange, categories = [] }) => {
           />
         </Grid>
         
-        <Grid item xs={12} sm={2}>
+        {/* Actualizado a Grid v2 */}
+        <Grid gridColumn={{ xs: "span 12", sm: "span 2" }}>
           <TextField
             fullWidth
             label="Stock Máximo"
@@ -94,7 +97,8 @@ const InventoryFilters = ({ filters, onFilterChange, categories = [] }) => {
           />
         </Grid>
         
-        <Grid item xs={12} sm={3}>
+        {/* Actualizado a Grid v2 */}
+        <Grid gridColumn={{ xs: "span 12", sm: "span 3" }}>
           <FormControl fullWidth size="small">
             <InputLabel id="status-filter-label">Estado</InputLabel>
             <Select
@@ -114,7 +118,8 @@ const InventoryFilters = ({ filters, onFilterChange, categories = [] }) => {
           </FormControl>
         </Grid>
         
-        <Grid item xs={12} sm={2} sx={{ display: 'flex', gap: 1 }}>
+        {/* Actualizado a Grid v2 */}
+        <Grid gridColumn={{ xs: "span 12", sm: "span 2" }} sx={{ display: 'flex', gap: 1 }}>
           <Button
             variant="contained"
             color="primary"

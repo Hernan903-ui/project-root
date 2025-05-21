@@ -1,13 +1,11 @@
-import React, { useState, useEffect } from 'react';
+//src/pages/CustomersPage.js
+import React, { useState, useEffect, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   Box,
   Typography,
-  Grid,
   Button,
   CircularProgress,
-  Tabs,
-  Tab,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -16,12 +14,17 @@ import {
   Divider,
   Alert,
   useMediaQuery,
-  useTheme
+  useTheme,
+  ToggleButtonGroup,
+  ToggleButton,
+  Grid
 } from '@mui/material';
+import GridItem from '../components/common/GridItem'; // Importamos el componente GridItem personalizado
 import {
   Add as AddIcon,
   ViewList as ViewListIcon,
   ViewModule as ViewModuleIcon,
+  FileDownload as FileDownloadIcon
 } from '@mui/icons-material';
 import { DataGrid } from '@mui/x-data-grid';
 import {
@@ -33,16 +36,17 @@ import CustomerForm from '../components/customers/CustomerForm';
 import CustomerDetails from '../components/customers/CustomerDetails';
 import CustomerFilters from '../components/customers/CustomerFilters';
 import CustomerCard from '../components/customers/CustomerCard';
-import { generatePDF } from '../utils/reportGenerator'; // **Corregido**
+import { generatePDF } from '../utils/reportGenerator';
 
 const CustomersPage = () => {
   const dispatch = useDispatch();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const isMediumScreen = useMediaQuery(theme.breakpoints.down('md'));
 
   const { customers, loading, error } = useSelector((state) => state.customers);
 
-  const [viewMode, setViewMode] = useState('grid');
+  const [viewMode, setViewMode] = useState(isMobile ? 'list' : 'grid');
   const [openAddForm, setOpenAddForm] = useState(false);
   const [openDetails, setOpenDetails] = useState(false);
   const [openDeleteConfirm, setOpenDeleteConfirm] = useState(false);
@@ -54,63 +58,7 @@ const CustomersPage = () => {
     state: ''
   });
 
-  useEffect(() => {
-    dispatch(fetchCustomers());
-  }, [dispatch]);
-
-  const handleOpenAddForm = () => {
-    setSelectedCustomer(null);
-    setOpenAddForm(true);
-  };
-
-  const handleCloseAddForm = () => {
-    setOpenAddForm(false);
-    dispatch(fetchCustomers());
-  };
-
-  const handleViewCustomer = (customer) => {
-    setSelectedCustomer(customer);
-    setOpenDetails(true);
-  };
-
-  const handleEditCustomer = (customer) => {
-    setSelectedCustomer(customer);
-    setOpenDetails(false);
-    setOpenAddForm(true);
-  };
-
-  const handleDeleteDialogOpen = (customer) => {
-    setSelectedCustomer(customer);
-    setOpenDeleteConfirm(true);
-    setOpenDetails(false);
-  };
-
-  const handleDeleteCustomer = () => {
-    if (selectedCustomer) {
-      dispatch(deleteCustomer(selectedCustomer.id || selectedCustomer._id))
-        .then(() => {
-          setOpenDeleteConfirm(false);
-          dispatch(fetchCustomers());
-        });
-    }
-  };
-
-  const handleFilterChange = (newFilters) => {
-    setFilters(newFilters);
-  };
-
-  const handleGenerateReport = () => {
-    generatePDF('Reporte de Clientes', filteredCustomers, [
-      { header: 'Nombre', field: 'name' },
-      { header: 'Tipo', field: 'type', formatter: (value) => value === 'business' ? 'Empresa' : 'Individual' },
-      { header: 'Email', field: 'email' },
-            { header: 'Teléfono', field: 'phone' },
-      { header: 'Ciudad', field: 'city' },
-      { header: 'Provincia/Estado', field: 'state' }
-    ]);
-  };
-
-  // Filtrar clientes según los filtros aplicados
+  // Filtrar clientes según los filtros aplicados - MOVIDO AQUÍ ANTES DE USAR LA VARIABLE
   const filteredCustomers = customers.filter(customer => {
     const searchTerms = filters.search.toLowerCase();
     const matchesSearch = !searchTerms ||
@@ -158,63 +106,171 @@ const CustomersPage = () => {
       field: 'city',
       headerName: 'Ciudad',
       width: 150,
+      hide: isMediumScreen,
     },
     {
       field: 'state',
       headerName: 'Provincia/Estado',
       width: 150,
+      hide: isMediumScreen,
     },
     {
       field: 'document',
       headerName: 'Documento',
       width: 150,
+      hide: isMediumScreen,
     }
   ];
 
+  useEffect(() => {
+    dispatch(fetchCustomers());
+    
+    // Limpiar el estado al desmontar el componente
+    return () => {
+      dispatch(clearCustomerState());
+    };
+  }, [dispatch]);
+
+  useEffect(() => {
+    // Actualizar viewMode cuando cambie el tamaño de pantalla
+    if (isMobile && viewMode === 'grid') {
+      setViewMode('list');
+    }
+  }, [isMobile, viewMode]);
+
+  const handleOpenAddForm = useCallback(() => {
+    setSelectedCustomer(null);
+    setOpenAddForm(true);
+  }, []);
+
+  const handleCloseAddForm = useCallback(() => {
+    setOpenAddForm(false);
+    dispatch(fetchCustomers());
+  }, [dispatch]);
+
+  const handleViewCustomer = useCallback((customer) => {
+    setSelectedCustomer(customer);
+    setOpenDetails(true);
+  }, []);
+
+  const handleEditCustomer = useCallback((customer) => {
+    setSelectedCustomer(customer);
+    setOpenDetails(false);
+    setOpenAddForm(true);
+  }, []);
+
+  const handleDeleteDialogOpen = useCallback((customer) => {
+    setSelectedCustomer(customer);
+    setOpenDeleteConfirm(true);
+    setOpenDetails(false);
+  }, []);
+
+  const handleDeleteCustomer = useCallback(() => {
+    if (selectedCustomer) {
+      dispatch(deleteCustomer(selectedCustomer.id || selectedCustomer._id))
+        .then(() => {
+          setOpenDeleteConfirm(false);
+          dispatch(fetchCustomers());
+        });
+    }
+  }, [dispatch, selectedCustomer]);
+
+  const handleFilterChange = useCallback((newFilters) => {
+    setFilters(newFilters);
+  }, []);
+
+  const handleGenerateReport = useCallback(() => {
+    generatePDF('Reporte de Clientes', filteredCustomers, [
+      { header: 'Nombre', field: 'name' },
+      { header: 'Tipo', field: 'type', formatter: (value) => value === 'business' ? 'Empresa' : 'Individual' },
+      { header: 'Email', field: 'email' },
+      { header: 'Teléfono', field: 'phone' },
+      { header: 'Ciudad', field: 'city' },
+      { header: 'Provincia/Estado', field: 'state' }
+    ]);
+  }, [filteredCustomers]);
+
+  const handleViewModeChange = useCallback((event, newMode) => {
+    if (newMode !== null) {
+      setViewMode(newMode);
+    }
+  }, []);
+
   return (
-    <Box sx={{ p: 3 }}>
+    <Box sx={{ width: '100%', p: { xs: 2, sm: 3 } }}>
       <Typography variant="h4" gutterBottom>
         Gestión de Clientes
       </Typography>
 
       {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
-          {error}
+        <Alert 
+          severity="error" 
+          sx={{ mb: 2 }}
+          onClose={() => dispatch(clearCustomerState())}
+        >
+          {typeof error === 'object' ? error.message : error}
         </Alert>
       )}
 
-      <Paper sx={{ p: 2, mb: 3 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+      <Paper 
+        elevation={2}
+        sx={{ 
+          p: { xs: 1.5, sm: 2 }, 
+          mb: 3, 
+          borderRadius: 2,
+          overflow: 'hidden'
+        }}
+      >
+        <Box sx={{ 
+          display: 'flex', 
+          flexDirection: { xs: 'column', sm: 'row' },
+          justifyContent: 'space-between', 
+          alignItems: { xs: 'stretch', sm: 'center' }, 
+          gap: 2,
+          mb: 3 
+        }}>
           <Typography variant="h6">
             Clientes ({filteredCustomers.length})
           </Typography>
 
-          <Box sx={{ display: 'flex', gap: 1 }}>
+          <Box sx={{ 
+            display: 'flex', 
+            flexDirection: { xs: 'column', sm: 'row' },
+            gap: 1,
+            width: { xs: '100%', sm: 'auto' }
+          }}>
             {!isMobile && (
-              <Box sx={{ display: 'flex', border: 1, borderColor: 'divider', borderRadius: 1 }}>
-                <Button
-                  startIcon={<ViewListIcon />}
-                  onClick={() => setViewMode('list')}
-                  color={viewMode === 'list' ? 'primary' : 'inherit'}
-                  sx={{ borderRadius: '4px 0 0 4px' }}
-                >
-                  Lista
-                </Button>
-                <Divider orientation="vertical" flexItem />
-                <Button
-                  startIcon={<ViewModuleIcon />}
-                  onClick={() => setViewMode('grid')}
-                  color={viewMode === 'grid' ? 'primary' : 'inherit'}
-                  sx={{ borderRadius: '0 4px 4px 0' }}
-                >
-                  Tarjetas
-                </Button>
-              </Box>
+              <ToggleButtonGroup
+                value={viewMode}
+                exclusive
+                onChange={handleViewModeChange}
+                aria-label="modo de visualización"
+                size="small"
+              >
+                <ToggleButton value="list" aria-label="vista de lista">
+                  <ViewListIcon />
+                  <Typography sx={{ ml: 1, display: { xs: 'none', md: 'block' } }}>
+                    Lista
+                  </Typography>
+                </ToggleButton>
+                <ToggleButton value="grid" aria-label="vista de tarjetas">
+                  <ViewModuleIcon />
+                  <Typography sx={{ ml: 1, display: { xs: 'none', md: 'block' } }}>
+                    Tarjetas
+                  </Typography>
+                </ToggleButton>
+              </ToggleButtonGroup>
             )}
 
             <Button
               variant="outlined"
+              startIcon={<FileDownloadIcon />}
               onClick={handleGenerateReport}
+              disabled={filteredCustomers.length === 0}
+              sx={{ 
+                display: { xs: 'none', sm: 'flex' },
+                minHeight: '36.5px'
+              }}
             >
               Exportar
             </Button>
@@ -224,6 +280,8 @@ const CustomersPage = () => {
               startIcon={<AddIcon />}
               color="primary"
               onClick={handleOpenAddForm}
+              fullWidth={isMobile}
+              sx={{ minHeight: '36.5px' }}
             >
               Nuevo Cliente
             </Button>
@@ -238,7 +296,7 @@ const CustomersPage = () => {
           </Box>
         ) : filteredCustomers.length === 0 ? (
           <Box sx={{ p: 3, textAlign: 'center' }}>
-            <Typography variant="body1" color="textSecondary">
+            <Typography variant="body1" color="text.secondary">
               No se encontraron clientes con los filtros aplicados
             </Typography>
             {filters.search || filters.type || filters.city || filters.state ? (
@@ -270,17 +328,27 @@ const CustomersPage = () => {
               disableSelectionOnClick
               getRowId={(row) => row.id || row._id}
               onRowClick={(params) => handleViewCustomer(params.row)}
+              loading={loading}
+              sx={{
+                '& .MuiDataGrid-cell': {
+                  cursor: 'pointer'
+                },
+                borderColor: 'divider',
+                '& .MuiDataGrid-columnHeaders': {
+                  backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.02)',
+                },
+              }}
             />
           </Box>
         ) : (
           <Grid container spacing={2}>
             {filteredCustomers.map((customer) => (
-              <Grid item xs={12} sm={6} md={4} lg={3} key={customer.id || customer._id}>
+              <GridItem xs={12} sm={6} md={4} lg={3} key={customer.id || customer._id}>
                 <CustomerCard
                   customer={customer}
                   onClick={handleViewCustomer}
                 />
-              </Grid>
+              </GridItem>
             ))}
           </Grid>
         )}
@@ -293,11 +361,12 @@ const CustomersPage = () => {
         maxWidth="md"
         fullWidth
         fullScreen={isMobile}
+        scroll="paper"
       >
         <DialogTitle>
           {selectedCustomer ? 'Editar Cliente' : 'Nuevo Cliente'}
         </DialogTitle>
-        <DialogContent>
+        <DialogContent dividers>
           <CustomerForm
             customer={selectedCustomer}
             onClose={handleCloseAddForm}
@@ -312,11 +381,12 @@ const CustomersPage = () => {
         maxWidth="md"
         fullWidth
         fullScreen={isMobile}
+        scroll="paper"
       >
         <DialogTitle>
           Detalles del Cliente
         </DialogTitle>
-        <DialogContent>
+        <DialogContent dividers>
           {selectedCustomer && (
             <CustomerDetails
               customer={selectedCustomer}
@@ -336,10 +406,12 @@ const CustomersPage = () => {
       <Dialog
         open={openDeleteConfirm}
         onClose={() => setOpenDeleteConfirm(false)}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
       >
-        <DialogTitle>Confirmar eliminación</DialogTitle>
+        <DialogTitle id="alert-dialog-title">Confirmar eliminación</DialogTitle>
         <DialogContent>
-          <Typography>
+          <Typography id="alert-dialog-description">
             ¿Está seguro de que desea eliminar al cliente <strong>{selectedCustomer?.name}</strong>?
             Esta acción no se puede deshacer.
           </Typography>
@@ -352,6 +424,7 @@ const CustomersPage = () => {
             color="error"
             variant="contained"
             onClick={handleDeleteCustomer}
+            autoFocus
           >
             Eliminar
           </Button>
@@ -362,4 +435,3 @@ const CustomersPage = () => {
 };
 
 export default CustomersPage;
-

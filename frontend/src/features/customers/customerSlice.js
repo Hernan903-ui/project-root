@@ -1,3 +1,4 @@
+//frontend/src/features/customers/customerSlice.js
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import customerApi from '../../api/customerApi';
 

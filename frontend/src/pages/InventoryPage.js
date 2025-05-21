@@ -29,12 +29,11 @@ import {
 import { DataGrid } from '@mui/x-data-grid';
 // Importación de inventorySlice (esta sí existe)
 import { fetchInventory, updateInventoryItem } from '../features/inventory/inventorySlice';
-// Importaciones de archivos que no existen (eliminadas)
-// import { fetchProducts } from '../features/products/productSlice';
-// import InventoryItemForm from '../components/inventory/InventoryItemForm';
-// import InventoryFilters from '../components/inventory/InventoryFilters';
-// import InventoryStats from '../components/inventory/InventoryStats';
-// import StockMovementHistory from '../components/inventory/StockMovementHistory';
+import { fetchProducts } from '../features/products/productSlice';
+import InventoryItemForm from '../components/inventory/InventoryItemForm';
+import InventoryFilters from '../components/inventory/InventoryFilters';
+import InventoryStats from '../components/inventory/InventoryStats';
+import StockMovementHistory from '../components/inventory/StockMovementHistory';
 import { generatePDF } from '../utils/reportGenerator'; // Esta ya la creamos
 
 // ... (resto del código de InventoryPage.js)

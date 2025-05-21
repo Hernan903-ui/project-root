@@ -7,7 +7,8 @@ import {
   Tab,
   CircularProgress,
   Paper,
-  Divider
+  Divider,
+  Alert
 } from '@mui/material';
 import {
   Person as PersonIcon,
@@ -46,11 +47,15 @@ function TabPanel(props) {
 
 const ProfilePage = () => {
   const dispatch = useDispatch();
-  const { profile, profileLoading, activeTab } = useSelector(state => state.userProfile);
+  const { profile, profileLoading, activeTab, error } = useSelector(state => state.userProfile);
 
   // Cargar perfil de usuario al montar el componente
   useEffect(() => {
-    dispatch(fetchUserProfile());
+    dispatch(fetchUserProfile())
+      .unwrap()
+      .catch(error => {
+        console.error("Error al cargar perfil:", error);
+      });
   }, [dispatch]);
 
   // Manejar cambio de pestaña
@@ -64,7 +69,14 @@ const ProfilePage = () => {
         Mi Perfil
       </Typography>
 
-      {profileLoading && !profile ? (
+      {/* Mostrar errores de carga si existe alguno */}
+      {error && (
+        <Alert severity="warning" sx={{ mb: 3 }}>
+          {error}
+        </Alert>
+      )}
+
+      {profileLoading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
           <CircularProgress />
         </Box>
@@ -86,6 +98,7 @@ const ProfilePage = () => {
             </Tabs>
           </Paper>
 
+          {/* Mostrar tabs incluso cuando hay error, pero con datos limitados o dummy */}
           <TabPanel value={activeTab} index={0}>
             <PersonalInformation />
           </TabPanel>
@@ -98,10 +111,10 @@ const ProfilePage = () => {
           {/* <TabPanel value={activeTab} index={2}>
             <SystemPreferences />
           </TabPanel> */}
-           <TabPanel value={activeTab} index={2}> {/* Ajuste de índice si se elimina una pestaña */}
+          
+          <TabPanel value={activeTab} index={2}> {/* Ajuste de índice si se elimina una pestaña */}
             <ActivityHistory />
           </TabPanel>
-
 
           {/* El TabPanel de Actividad ahora podría ser index 2 si solo hay 3 pestañas */}
           {/* <TabPanel value={activeTab} index={3}>

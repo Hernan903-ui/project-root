@@ -19,7 +19,7 @@ import { useForm, Controller } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
 import { useSnackbar } from 'notistack';
-import { useQuery, useMutation, useQueryClient } from 'react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import SaveIcon from '@mui/icons-material/Save';
 import CancelIcon from '@mui/icons-material/Cancel';
 
@@ -63,17 +63,16 @@ const AdjustmentForm = ({ onCompleted }) => {
     data: products, 
     isLoading: isLoadingProducts,
     refetch,
-  } = useQuery(
-    ['products', productSearch],
-    () => getProductsBySearch(productSearch),
-    {
-      enabled: productSearch.length > 2,
-      staleTime: 60000,
-    }
-  );
+  } = useQuery({
+    queryKey: ['products', productSearch],
+    queryFn: () => getProductsBySearch(productSearch),
+    enabled: productSearch.length > 2,
+    staleTime: 60000,
+  });
 
   // Mutación para crear ajuste
-  const createAdjustment = useMutation(createInventoryMovement, {
+  const createAdjustment = useMutation({
+    mutationFn: createInventoryMovement,
     onSuccess: () => {
       queryClient.invalidateQueries('inventory-movements');
       enqueueSnackbar('Ajuste de inventario creado con éxito', { variant: 'success' });
@@ -133,7 +132,8 @@ const AdjustmentForm = ({ onCompleted }) => {
 
       <Box component="form" onSubmit={handleSubmit(onSubmit)} noValidate>
         <Grid container spacing={3}>
-          <Grid item xs={12}>
+          {/* Actualizado a Grid v2 */}
+          <Grid gridColumn={{ xs: "span 12" }}>
             <Controller
               name="product_id"
               control={control}
@@ -190,7 +190,8 @@ const AdjustmentForm = ({ onCompleted }) => {
             />
           </Grid>
 
-          <Grid item xs={12} md={6}>
+          {/* Actualizado a Grid v2 */}
+          <Grid gridColumn={{ xs: "span 12", md: "span 6" }}>
             <Controller
               name="movement_type"
               control={control}
@@ -216,7 +217,8 @@ const AdjustmentForm = ({ onCompleted }) => {
             />
           </Grid>
 
-          <Grid item xs={12} md={6}>
+          {/* Actualizado a Grid v2 */}
+          <Grid gridColumn={{ xs: "span 12", md: "span 6" }}>
             <Controller
               name="quantity"
               control={control}
@@ -234,7 +236,8 @@ const AdjustmentForm = ({ onCompleted }) => {
             />
           </Grid>
 
-          <Grid item xs={12}>
+          {/* Actualizado a Grid v2 */}
+          <Grid gridColumn={{ xs: "span 12" }}>
             <Controller
               name="notes"
               control={control}
@@ -254,13 +257,14 @@ const AdjustmentForm = ({ onCompleted }) => {
 
           {/* Información del producto seleccionado */}
           {selectedProduct && (
-            <Grid item xs={12}>
+            <Grid gridColumn={{ xs: "span 12" }}>
               <Paper variant="outlined" sx={{ p: 2, mt: 1, bgcolor: 'background.default' }}>
                 <Typography variant="subtitle2" gutterBottom>
                   Información del Producto Seleccionado:
                 </Typography>
                 <Grid container spacing={2}>
-                  <Grid item xs={12} sm={6}>
+                  {/* Actualizado a Grid v2 */}
+                  <Grid gridColumn={{ xs: "span 12", sm: "span 6" }}>
                     <Typography variant="body2">
                       Nombre: <strong>{selectedProduct.name}</strong>
                     </Typography>
@@ -273,7 +277,8 @@ const AdjustmentForm = ({ onCompleted }) => {
                       </Typography>
                     )}
                   </Grid>
-                  <Grid item xs={12} sm={6}>
+                  {/* Actualizado a Grid v2 */}
+                  <Grid gridColumn={{ xs: "span 12", sm: "span 6" }}>
                     <Typography variant="body2">
                       Stock actual: <strong>{selectedProduct.stock_quantity} unidades</strong>
                     </Typography>
@@ -290,7 +295,8 @@ const AdjustmentForm = ({ onCompleted }) => {
           )}
 
           {/* Botones */}
-          <Grid item xs={12} sx={{ mt: 2 }}>
+          {/* Actualizado a Grid v2 */}
+          <Grid gridColumn={{ xs: "span 12" }} sx={{ mt: 2 }}>
             <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
               <Button
                 variant="outlined"

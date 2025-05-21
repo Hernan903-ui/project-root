@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   Box,
@@ -6,7 +6,10 @@ import {
   Tabs,
   Tab,
   Paper,
-  CircularProgress
+  CircularProgress,
+  useTheme,
+  useMediaQuery,
+  Fade
 } from '@mui/material';
 import {
   AttachMoney as TaxIcon,
@@ -23,51 +26,123 @@ import UserManagement from '../components/settings/UserManagement';
 
 const SettingsPage = () => {
   const dispatch = useDispatch();
-  const { loading, activeTab } = useSelector(state => state.settings);
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const isMediumScreen = useMediaQuery(theme.breakpoints.down('md'));
+  
+  const { loading, activeTab, error } = useSelector(state => state.settings);
 
   // Cargar configuraciones al montar el componente
   useEffect(() => {
     dispatch(fetchSystemSettings());
   }, [dispatch]);
 
-  // Manejar cambio de pestaña
-  const handleTabChange = (event, newValue) => {
+  // Manejar cambio de pestaña con useCallback
+  const handleTabChange = useCallback((event, newValue) => {
     dispatch(setActiveTab(newValue));
-  };
+  }, [dispatch]);
+
+  // Array de tabs para facilitar la configuración
+  const tabs = [
+    { icon: <TaxIcon />, label: "Impuestos", component: TaxSettings },
+    { icon: <PrintIcon />, label: "Impresión", component: PrintSettings },
+    { icon: <PaymentIcon />, label: "Métodos de Pago", component: PaymentMethodsSettings },
+    { icon: <AdminIcon />, label: "Usuarios", component: UserManagement }
+  ];
+
+  // Componente activo
+  const ActiveComponent = tabs[activeTab]?.component || null;
 
   return (
-    <Box sx={{ p: 3 }}>
-      <Typography variant="h4" gutterBottom>
+    <Box sx={{ width: '100%', p: { xs: 2, sm: 3 } }}>
+      <Typography 
+        variant="h4" 
+        gutterBottom 
+        sx={{ 
+          mb: 3,
+          fontSize: { xs: '1.5rem', sm: '2rem' }
+        }}
+      >
         Configuración del Sistema
       </Typography>
       
-      <Paper sx={{ mb: 3 }}>
+      <Paper 
+        elevation={2} 
+        sx={{ 
+          mb: 3, 
+          borderRadius: 2,
+          overflow: 'hidden'
+        }}
+      >
         <Tabs
           value={activeTab}
           onChange={handleTabChange}
-          variant="scrollable"
-          scrollButtons="auto"
-          sx={{ borderBottom: 1, borderColor: 'divider' }}
+          variant={isMediumScreen ? "fullWidth" : "scrollable"}
+          scrollButtons={isMobile ? "auto" : false}
+          allowScrollButtonsMobile
+          sx={{ 
+            borderBottom: 1, 
+            borderColor: 'divider',
+            minHeight: { xs: 56, sm: 64 },
+            '& .MuiTab-root': {
+              minHeight: { xs: 56, sm: 64 },
+              fontSize: { xs: '0.8rem', sm: '0.875rem' },
+              py: 1,
+              px: { xs: 1, sm: 2 }
+            }
+          }}
+          aria-label="configuración del sistema"
         >
-          <Tab icon={<TaxIcon />} label="Impuestos" iconPosition="start" />
-          <Tab icon={<PrintIcon />} label="Impresión" iconPosition="start" />
-          <Tab icon={<PaymentIcon />} label="Métodos de Pago" iconPosition="start" />
-          <Tab icon={<AdminIcon />} label="Usuarios" iconPosition="start" />
+          {tabs.map((tab, index) => (
+            <Tab 
+              key={index}
+              icon={tab.icon} 
+              label={isMobile ? undefined : tab.label} 
+              iconPosition={isMobile ? "top" : "start"}
+              aria-label={tab.label}
+              sx={{
+                opacity: activeTab === index ? 1 : 0.7,
+                transition: theme.transitions.create(['opacity', 'color'], {
+                  duration: theme.transitions.duration.shorter,
+                }),
+              }}
+            />
+          ))}
         </Tabs>
       </Paper>
       
-      {loading && !activeTab ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+      {loading ? (
+        <Box sx={{ 
+          display: 'flex', 
+          justifyContent: 'center', 
+          alignItems: 'center',
+          height: 300,
+          p: 4 
+        }}>
           <CircularProgress />
         </Box>
       ) : (
-        <>
-          {/* Contenido de cada pestaña */}
-          {activeTab === 0 && <TaxSettings />}
-          {activeTab === 1 && <PrintSettings />}
-          {activeTab === 2 && <PaymentMethodsSettings />}
-          {activeTab === 3 && <UserManagement />}
-        </>
+        <Paper 
+          elevation={2} 
+          sx={{ 
+            p: { xs: 2, sm: 3 },
+            borderRadius: 2,
+            minHeight: 300
+          }}
+        >
+          <Fade in={!loading} timeout={500}>
+            <Box>
+              {ActiveComponent && <ActiveComponent />}
+              {!ActiveComponent && (
+                <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 300 }}>
+                  <Typography color="text.secondary">
+                    Seleccione una pestaña para ver la configuración
+                  </Typography>
+                </Box>
+              )}
+            </Box>
+          </Fade>
+        </Paper>
       )}
     </Box>
   );

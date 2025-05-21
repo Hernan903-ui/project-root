@@ -62,7 +62,8 @@ const PurchaseOrderFilters = ({ onFilter }) => {
     <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={es}>
       <Box component="form" onSubmit={handleSubmit} sx={{ p: 2 }}>
         <Grid container spacing={2} alignItems="center">
-          <Grid item xs={12} sm={6} md={3}>
+          {/* Actualizado a Grid v2 */}
+          <Grid gridColumn={{ xs: "span 12", sm: "span 6", md: "span 3" }}>
             <TextField
               fullWidth
               name="search"
@@ -88,7 +89,8 @@ const PurchaseOrderFilters = ({ onFilter }) => {
               }}
             />
           </Grid>
-          <Grid item xs={12} sm={6} md={2}>
+          {/* Actualizado a Grid v2 */}
+          <Grid gridColumn={{ xs: "span 12", sm: "span 6", md: "span 2" }}>
             <FormControl fullWidth size="small">
               <InputLabel id="status-select-label">Estado</InputLabel>
               <Select
@@ -108,29 +110,38 @@ const PurchaseOrderFilters = ({ onFilter }) => {
               </Select>
             </FormControl>
           </Grid>
-          <Grid item xs={12} sm={6} md={2}>
+          {/* Actualizado a Grid v2 y DatePicker moderno */}
+          <Grid gridColumn={{ xs: "span 12", sm: "span 6", md: "span 2" }}>
             <DatePicker
               label="Desde"
               value={filters.dateFrom}
               onChange={(date) => handleDateChange(date, 'dateFrom')}
-              renderInput={(params) => (
-                <TextField {...params} size="small" fullWidth />
-              )}
               maxDate={filters.dateTo}
+              slotProps={{ 
+                textField: { 
+                  size: "small", 
+                  fullWidth: true 
+                } 
+              }}
             />
           </Grid>
-          <Grid item xs={12} sm={6} md={2}>
+          {/* Actualizado a Grid v2 y DatePicker moderno */}
+          <Grid gridColumn={{ xs: "span 12", sm: "span 6", md: "span 2" }}>
             <DatePicker
               label="Hasta"
               value={filters.dateTo}
               onChange={(date) => handleDateChange(date, 'dateTo')}
-              renderInput={(params) => (
-                <TextField {...params} size="small" fullWidth />
-              )}
               minDate={filters.dateFrom}
+              slotProps={{ 
+                textField: { 
+                  size: "small", 
+                  fullWidth: true 
+                } 
+              }}
             />
           </Grid>
-          <Grid item xs={12} sm={12} md={3}>
+          {/* Actualizado a Grid v2 */}
+          <Grid gridColumn={{ xs: "span 12", sm: "span 12", md: "span 3" }}>
             <Box sx={{ display: 'flex', gap: 1 }}>
               <Button
                 type="submit"

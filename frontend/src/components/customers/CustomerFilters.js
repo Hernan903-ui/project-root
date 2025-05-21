@@ -53,8 +53,10 @@ const CustomerFilters = ({ onFilterChange }) => {
 
   return (
     <Box sx={{ mb: 3 }}>
+      {/* Contenedor principal */}
       <Grid container spacing={2} alignItems="center">
-        <Grid item xs={12} sm={6} md={4}>
+        {/* Actualizado a sintaxis Grid v2 */}
+        <Grid gridColumn={{ xs: "span 12", sm: "span 6", md: "span 4" }}>
           <TextField
             fullWidth
             name="search"
@@ -85,7 +87,8 @@ const CustomerFilters = ({ onFilterChange }) => {
           />
         </Grid>
         
-        <Grid item xs={12} sm={6} md={2}>
+        {/* Actualizado a sintaxis Grid v2 */}
+        <Grid gridColumn={{ xs: "span 12", sm: "span 6", md: "span 2" }}>
           <TextField
             fullWidth
             select
@@ -102,7 +105,8 @@ const CustomerFilters = ({ onFilterChange }) => {
           </TextField>
         </Grid>
         
-        <Grid item xs={12} sm={6} md={3}>
+        {/* Actualizado a sintaxis Grid v2 */}
+        <Grid gridColumn={{ xs: "span 12", sm: "span 6", md: "span 3" }}>
           <TextField
             fullWidth
             name="city"
@@ -115,7 +119,8 @@ const CustomerFilters = ({ onFilterChange }) => {
           />
         </Grid>
         
-        <Grid item xs={12} sm={6} md={3}>
+        {/* Actualizado a sintaxis Grid v2 */}
+        <Grid gridColumn={{ xs: "span 12", sm: "span 6", md: "span 3" }}>
           <Box sx={{ display: 'flex', gap: 1 }}>
             <TextField
               fullWidth

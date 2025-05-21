@@ -1,255 +1,264 @@
-import React from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import {
-  Box,
-  Typography,
-  Breadcrumbs,
-  Link,
-  Alert,
-  CircularProgress,
-  Paper,
-  Grid,
-  Chip,
-  Button,
-  Divider,
-} from '@mui/material';
-import NavigateNextIcon from '@mui/icons-material/NavigateNext';
-import EditIcon from '@mui/icons-material/Edit';
-import DeleteIcon from '@mui/icons-material/Delete';
-import RestoreIcon from '@mui/icons-material/Restore';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+// pages/ProductDetailsPage.js
+import React, { useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useSnackbar } from 'notistack';
-
-import { getProductById, updateProduct } from '../api/productApi';
+import { 
+  Box, 
+  Typography, 
+  Paper, 
+  Button, 
+  Divider, 
+  Chip, 
+  Alert,
+  AlertTitle,
+  Tab,
+  Tabs
+} from '@mui/material';
+import { 
+  Edit as EditIcon, 
+  Delete as DeleteIcon, 
+  ArrowBack as ArrowBackIcon,
+  Inventory as InventoryIcon,
+  Timeline as TimelineIcon
+} from '@mui/icons-material';
+import { Grid } from '@mui/material';
+import DashboardLayout from '../components/layout/DashboardLayout';
+import LoadingOverlay from '../components/common/LoadingOverlay';
+import ConfirmDialog from '../components/common/ConfirmDialog';
+import StockMovementHistory from '../components/inventory/StockMovementHistory';
+import { getProductById, deleteProduct } from '../api/productApi';
 
 const ProductDetailsPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { enqueueSnackbar } = useSnackbar();
   const queryClient = useQueryClient();
+  
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [currentTab, setCurrentTab] = useState(0);
 
-  // Cargar datos del producto
+  // Usamos la sintaxis de objeto para React Query v5
   const { 
     data: product, 
     isLoading, 
+    isError, 
     error 
-  } = useQuery(['product', id], () => getProductById(id));
+  } = useQuery({
+    queryKey: ['product', id],
+    queryFn: () => getProductById(id)
+  });
 
-  // Mutación para cambiar el estado del producto
-  const toggleStatus = useMutation(
-    (is_active) => updateProduct(id, { is_active }),
-    {
-      onSuccess: () => {
-        queryClient.invalidateQueries(['product', id]);
-        queryClient.invalidateQueries('products');
-        enqueueSnackbar(
-          `Producto ${product.is_active ? 'desactivado' : 'activado'} correctamente`,
-          { variant: 'success' }
-        );
-      },
-      onError: (error) => {
-        enqueueSnackbar(
-          `Error al cambiar el estado: ${error.response?.data?.detail || error.message}`,
-          { variant: 'error' }
-        );
-      },
+  const deleteMutation = useMutation({
+    mutationFn: (productId) => deleteProduct(productId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+      navigate('/products');
     }
-  );
+  });
 
-  const handleToggleStatus = () => {
-    toggleStatus.mutate(!product.is_active);
-  };
 
   const handleEdit = () => {
     navigate(`/products/edit/${id}`);
   };
 
-  const handleBack = () => {
-    navigate('/products');
+  const handleDelete = () => {
+    setConfirmDelete(true);
   };
 
-  // Si está cargando, mostrar spinner
-  if (isLoading) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', my: 5 }}>
-        <CircularProgress />
-      </Box>
-    );
-  }
-
-  // Si hay un error, mostrar mensaje
-  if (error) {
-    return (
-      <Alert severity="error" sx={{ mt: 2 }}>
-        Error al cargar el producto: {error.message}
-      </Alert>
-    );
-  }
-
-  const getStockStatus = () => {
-    if (product.stock_quantity <= 0) {
-      return { label: 'Sin Stock', color: 'error' };
-    }
-    if (product.stock_quantity <= product.min_stock_level) {
-      return { label: 'Bajo', color: 'warning' };
-    }
-    return { label: 'Disponible', color: 'success' };
+  const confirmDeleteAction = () => {
+    deleteMutation.mutate(id);
+    setConfirmDelete(false);
   };
 
-  const stockStatus = getStockStatus();
+  const handleTabChange = (event, newValue) => {
+    setCurrentTab(newValue);
+  };
+
+  if (isLoading) return <DashboardLayout><LoadingOverlay /></DashboardLayout>;
+  
+  if (isError) {
+    return (
+      <DashboardLayout>
+        <Box sx={{ p: 3 }}>
+          <Alert severity="error">
+            <AlertTitle>Error</AlertTitle>
+            {error?.message || 'Ha ocurrido un error al cargar los detalles del producto.'}
+          </Alert>
+          <Button 
+            sx={{ mt: 2 }}
+            startIcon={<ArrowBackIcon />}
+            onClick={() => navigate('/products')}
+          >
+            Volver a Productos
+          </Button>
+        </Box>
+      </DashboardLayout>
+    );
+  }
 
   return (
-    <Box>
-      {/* Encabezado y breadcrumbs */}
-      <Box sx={{ mb: 3 }}>
-        <Typography variant="h4" gutterBottom>
-          Detalles del Producto
-        </Typography>
-        <Breadcrumbs separator={<NavigateNextIcon fontSize="small" />} aria-label="breadcrumb">
-          <Link color="inherit" href="/dashboard">
-            Dashboard
-          </Link>
-          <Link color="inherit" href="/products">
-            Productos
-          </Link>
-          <Typography color="text.primary">{product.name}</Typography>
-        </Breadcrumbs>
-      </Box>
+    <DashboardLayout>
+      <Box sx={{ p: 3 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+          <Button
+            startIcon={<ArrowBackIcon />}
+            onClick={() => navigate('/products')}
+            sx={{ mr: 2 }}
+          >
+            Volver
+          </Button>
+          <Typography variant="h4" component="h1">
+            Detalles del Producto
+          </Typography>
+        </Box>
 
-      {/* Acciones */}
-      <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
-        <Button 
-          variant="outlined" 
-          startIcon={<ArrowBackIcon />}
-          onClick={handleBack}
-        >
-          Volver
-        </Button>
-        <Button 
-          variant="outlined" 
-          startIcon={<EditIcon />}
-          onClick={handleEdit}
-        >
-          Editar
-        </Button>
-        <Button 
-          variant="outlined" 
-          color={product.is_active ? "error" : "primary"}
-          startIcon={product.is_active ? <DeleteIcon /> : <RestoreIcon />}
-          onClick={handleToggleStatus}
-        >
-          {product.is_active ? 'Desactivar' : 'Activar'}
-        </Button>
-      </Box>
-
-      {/* Detalles del producto */}
-      <Paper sx={{ p: 3 }}>
-        <Grid container spacing={3}>
-          {/* Información básica */}
-          <Grid item xs={12}>
-            <Typography variant="h5" gutterBottom>
-              {product.name}
-            </Typography>
-            <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
+        <Paper sx={{ p: 3, mb: 3 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+            <Box>
+              <Typography variant="h5" component="h2" gutterBottom>
+                {product.name}
+              </Typography>
+              <Typography variant="body2" color="text.secondary" gutterBottom>
+                Código: {product.sku}
+              </Typography>
               <Chip 
-                label={product.is_active ? 'Activo' : 'Inactivo'} 
-                color={product.is_active ? 'success' : 'default'} 
+                label={product.active ? "Activo" : "Inactivo"} 
+                color={product.active ? "success" : "default"}
+                size="small"
+                sx={{ mr: 1 }}
               />
               <Chip 
-                label={stockStatus.label} 
-                color={stockStatus.color} 
+                label={product.stockQuantity > 0 ? "En stock" : "Sin stock"} 
+                color={product.stockQuantity > 0 ? "primary" : "error"}
+                size="small"
               />
-              <Chip 
-                label={`SKU: ${product.sku}`} 
+            </Box>
+            <Box>
+              <Button 
+                startIcon={<EditIcon />} 
                 variant="outlined" 
-              />
-              {product.barcode && (
-                <Chip 
-                  label={`Barcode: ${product.barcode}`} 
-                  variant="outlined" 
-                />
-              )}
+                onClick={handleEdit}
+                sx={{ mr: 1 }}
+              >
+                Editar
+              </Button>
+              <Button 
+                startIcon={<DeleteIcon />} 
+                variant="outlined" 
+                color="error" 
+                onClick={handleDelete}
+              >
+                Eliminar
+              </Button>
             </Box>
-            <Typography variant="body1" paragraph>
-              {product.description || "Sin descripción"}
-            </Typography>
-          </Grid>
+          </Box>
 
-          <Grid item xs={12}>
-            <Divider />
-          </Grid>
+          <Divider sx={{ my: 2 }} />
 
-          {/* Información de precios */}
-          <Grid item xs={12} md={4}>
-            <Box sx={{ mb: 2 }}>
-              <Typography variant="subtitle1" gutterBottom>
-                Precios
-              </Typography>
-              <Typography variant="h6" color="primary">
-                ${product.price.toFixed(2)}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Costo: ${product.cost_price.toFixed(2)}
-              </Typography>
-              {product.tax_rate > 0 && (
-                <Typography variant="body2" color="text.secondary">
-                  Impuesto: {product.tax_rate}%
-                </Typography>
-              )}
-            </Box>
-          </Grid>
-
-          {/* Información de inventario */}
-          <Grid item xs={12} md={4}>
-            <Box sx={{ mb: 2 }}>
-              <Typography variant="subtitle1" gutterBottom>
-                Inventario
-              </Typography>
-              <Typography variant="h6">
-                {product.stock_quantity} unidades
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Nivel mínimo: {product.min_stock_level} unidades
-              </Typography>
-            </Box>
-          </Grid>
-
-          {/* Información de categoría */}
-          <Grid item xs={12} md={4}>
-            <Box sx={{ mb: 2 }}>
-              <Typography variant="subtitle1" gutterBottom>
-                Categoría
-              </Typography>
-              <Typography variant="h6">
-                {product.category.name}
-              </Typography>
-              {product.category.description && (
-                <Typography variant="body2" color="text.secondary">
-                  {product.category.description}
-                </Typography>
-              )}
-            </Box>
-          </Grid>
-
-          <Grid item xs={12}>
-            <Divider />
-          </Grid>
-
-          {/* Fechas */}
-          <Grid item xs={12}>
-            <Typography variant="body2" color="text.secondary">
-              Creado: {new Date(product.created_at).toLocaleString()}
-            </Typography>
-            {product.updated_at && (
-              <Typography variant="body2" color="text.secondary">
-                Última actualización: {new Date(product.updated_at).toLocaleString()}
-              </Typography>
+          <Grid container spacing={3}>
+            <Grid xs={12} md={6}>
+              <Typography variant="subtitle1" fontWeight="bold">Precio</Typography>
+              <Typography variant="body1">${product.price.toFixed(2)}</Typography>
+            </Grid>
+            <Grid xs={12} md={6}>
+              <Typography variant="subtitle1" fontWeight="bold">Categoría</Typography>
+              <Typography variant="body1">{product.category}</Typography>
+            </Grid>
+            <Grid xs={12} md={6}>
+              <Typography variant="subtitle1" fontWeight="bold">Stock Actual</Typography>
+              <Typography variant="body1">{product.stockQuantity} unidades</Typography>
+            </Grid>
+            <Grid xs={12} md={6}>
+              <Typography variant="subtitle1" fontWeight="bold">Stock Mínimo</Typography>
+              <Typography variant="body1">{product.minStockLevel} unidades</Typography>
+            </Grid>
+            
+            {product.barcode && (
+              <Grid xs={12} md={6}>
+                <Typography variant="subtitle1" fontWeight="bold">Código de Barras</Typography>
+                <Typography variant="body1">{product.barcode}</Typography>
+              </Grid>
             )}
+            
+            {product.brand && (
+              <Grid xs={12} md={6}>
+                <Typography variant="subtitle1" fontWeight="bold">Marca</Typography>
+                <Typography variant="body1">{product.brand}</Typography>
+              </Grid>
+            )}
+            
+            <Grid xs={12}>
+              <Typography variant="subtitle1" fontWeight="bold">Descripción</Typography>
+              <Typography variant="body1">{product.description || "Sin descripción"}</Typography>
+            </Grid>
           </Grid>
-        </Grid>
-      </Paper>
-    </Box>
+        </Paper>
+
+        <Paper sx={{ p: 2 }}>
+          <Tabs value={currentTab} onChange={handleTabChange} aria-label="product tabs">
+            <Tab icon={<InventoryIcon />} label="Inventario" />
+            <Tab icon={<TimelineIcon />} label="Historial de Movimientos" />
+          </Tabs>
+          
+          <Box sx={{ p: 2, pt: 3 }}>
+            {currentTab === 0 && (
+              <Box>
+                <Typography variant="h6" gutterBottom>Información de Inventario</Typography>
+                <Grid container spacing={3}>
+                                    <Grid xs={12} md={6}>
+                    <Typography variant="subtitle1" fontWeight="bold">Ubicación</Typography>
+                    <Typography variant="body1">{product.location || "No especificada"}</Typography>
+                  </Grid>
+                  <Grid xs={12} md={6}>
+                    <Typography variant="subtitle1" fontWeight="bold">Costo de Compra</Typography>
+                    <Typography variant="body1">${product.costPrice?.toFixed(2) || "No especificado"}</Typography>
+                  </Grid>
+                  <Grid xs={12} md={6}>
+                    <Typography variant="subtitle1" fontWeight="bold">Fecha Última Compra</Typography>
+                    <Typography variant="body1">
+                      {product.lastPurchaseDate 
+                        ? new Date(product.lastPurchaseDate).toLocaleDateString() 
+                        : "No hay compras registradas"}
+                    </Typography>
+                  </Grid>
+                  <Grid xs={12} md={6}>
+                    <Typography variant="subtitle1" fontWeight="bold">Último Proveedor</Typography>
+                    <Typography variant="body1">{product.lastSupplier || "No especificado"}</Typography>
+                  </Grid>
+                  <Grid xs={12}>
+                    <Box sx={{ mt: 2 }}>
+                      <Alert severity={product.stockQuantity <= product.minStockLevel ? "warning" : "info"}>
+                        {product.stockQuantity <= product.minStockLevel 
+                          ? "Este producto está por debajo o en el nivel mínimo de stock recomendado."
+                          : "El nivel de stock de este producto es adecuado."}
+                      </Alert>
+                    </Box>
+                  </Grid>
+                </Grid>
+              </Box>
+            )}
+            
+            {currentTab === 1 && (
+              <Box>
+                <Typography variant="h6" gutterBottom>Historial de Movimientos</Typography>
+                {product.id && (
+                  <StockMovementHistory productId={product.id} />
+                )}
+              </Box>
+            )}
+          </Box>
+        </Paper>
+
+        {/* Diálogo de confirmación para eliminar */}
+        <ConfirmDialog
+          open={confirmDelete}
+          title="Confirmar eliminación"
+          message={`¿Está seguro que desea eliminar el producto "${product?.name}"? Esta acción no se puede deshacer.`}
+          onConfirm={confirmDeleteAction}
+          onCancel={() => setConfirmDelete(false)}
+          isLoading={deleteMutation.isPending}
+        />
+      </Box>
+    </DashboardLayout>
   );
 };
 

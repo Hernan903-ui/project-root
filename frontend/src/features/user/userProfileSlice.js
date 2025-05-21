@@ -1,6 +1,40 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import userApi from '../../api/userApi';
 
+// Función auxiliar para manejar errores de manera consistente
+const handleApiError = (error) => {
+  // Si el error es un string, devolverlo directamente
+  if (typeof error === 'string') return error;
+  
+  // Si es un objeto de error de respuesta de axios
+  if (error.response) {
+    // Manejar errores de validación (422)
+    if (error.response.status === 422 && error.response.data?.detail) {
+      const detail = error.response.data.detail;
+      
+      // FastAPI suele devolver arrays para errores de validación
+      if (Array.isArray(detail) && detail.length > 0) {
+        return detail[0].msg || 'Error de validación';
+      }
+      
+      return typeof detail === 'string' ? detail : 'Error de validación';
+    }
+    
+    // Otros errores HTTP
+    return error.response.data?.message || 
+           error.response.data?.detail || 
+           `Error ${error.response.status}: ${error.response.statusText}`;
+  }
+  
+  // Si es un error de red (sin respuesta)
+  if (error.request) {
+    return 'No se pudo conectar con el servidor. Verifique su conexión.';
+  }
+  
+  // Otros tipos de errores
+  return error.message || 'Error desconocido';
+};
+
 // Acción asíncrona para obtener el perfil de usuario
 export const fetchUserProfile = createAsyncThunk(
   'userProfile/fetchUserProfile',
@@ -8,7 +42,8 @@ export const fetchUserProfile = createAsyncThunk(
     try {
       return await userApi.getUserProfile();
     } catch (error) {
-      return rejectWithValue(error.response?.data || 'Error al obtener el perfil de usuario');
+      console.error('Error obteniendo perfil:', error);
+      return rejectWithValue(handleApiError(error));
     }
   }
 );
@@ -20,7 +55,7 @@ export const updateUserProfile = createAsyncThunk(
     try {
       return await userApi.updateUserProfile(userData);
     } catch (error) {
-      return rejectWithValue(error.response?.data || 'Error al actualizar el perfil');
+      return rejectWithValue(handleApiError(error));
     }
   }
 );
@@ -32,7 +67,7 @@ export const changePassword = createAsyncThunk(
     try {
       return await userApi.changePassword(passwordData);
     } catch (error) {
-      return rejectWithValue(error.response?.data || 'Error al cambiar la contraseña');
+      return rejectWithValue(handleApiError(error));
     }
   }
 );
@@ -44,7 +79,7 @@ export const updateUserPreferences = createAsyncThunk(
     try {
       return await userApi.updateUserPreferences(preferences);
     } catch (error) {
-      return rejectWithValue(error.response?.data || 'Error al actualizar preferencias');
+      return rejectWithValue(handleApiError(error));
     }
   }
 );
@@ -56,7 +91,7 @@ export const fetchUserActivityHistory = createAsyncThunk(
     try {
       return await userApi.getUserActivityHistory(params);
     } catch (error) {
-      return rejectWithValue(error.response?.data || 'Error al obtener historial de actividad');
+      return rejectWithValue(handleApiError(error));
     }
   }
 );
@@ -68,7 +103,7 @@ export const updateProfileImage = createAsyncThunk(
     try {
       return await userApi.updateProfileImage(formData);
     } catch (error) {
-      return rejectWithValue(error.response?.data || 'Error al actualizar imagen de perfil');
+      return rejectWithValue(handleApiError(error));
     }
   }
 );
@@ -122,7 +157,10 @@ const userProfileSlice = createSlice({
       })
       .addCase(fetchUserProfile.rejected, (state, action) => {
         state.profileLoading = false;
-        state.error = action.payload;
+        // Asegurarse de que el error sea un string para facilitar el rendering
+        state.error = typeof action.payload === 'string' 
+          ? action.payload 
+          : action.error?.message || 'Error al obtener el perfil de usuario';
       })
       
       // updateUserProfile
@@ -138,7 +176,9 @@ const userProfileSlice = createSlice({
       })
       .addCase(updateUserProfile.rejected, (state, action) => {
         state.profileLoading = false;
-        state.error = action.payload;
+        state.error = typeof action.payload === 'string' 
+          ? action.payload 
+          : action.error?.message || 'Error al actualizar el perfil';
         state.profileUpdateSuccess = false;
       })
       
@@ -154,7 +194,9 @@ const userProfileSlice = createSlice({
       })
       .addCase(changePassword.rejected, (state, action) => {
         state.passwordLoading = false;
-        state.error = action.payload;
+        state.error = typeof action.payload === 'string' 
+          ? action.payload 
+          : action.error?.message || 'Error al cambiar la contraseña';
         state.passwordChangeSuccess = false;
       })
       
@@ -171,7 +213,9 @@ const userProfileSlice = createSlice({
       })
       .addCase(updateUserPreferences.rejected, (state, action) => {
         state.preferencesLoading = false;
-        state.error = action.payload;
+        state.error = typeof action.payload === 'string' 
+          ? action.payload 
+          : action.error?.message || 'Error al actualizar preferencias';
         state.preferencesUpdateSuccess = false;
       })
       
@@ -186,7 +230,9 @@ const userProfileSlice = createSlice({
       })
       .addCase(fetchUserActivityHistory.rejected, (state, action) => {
         state.activityLoading = false;
-        state.error = action.payload;
+        state.error = typeof action.payload === 'string' 
+          ? action.payload 
+          : action.error?.message || 'Error al obtener historial de actividad';
       })
       
       // updateProfileImage
@@ -204,7 +250,9 @@ const userProfileSlice = createSlice({
       })
       .addCase(updateProfileImage.rejected, (state, action) => {
         state.imageLoading = false;
-        state.error = action.payload;
+        state.error = typeof action.payload === 'string' 
+          ? action.payload 
+          : action.error?.message || 'Error al actualizar imagen de perfil';
         state.imageUpdateSuccess = false;
       });
   }

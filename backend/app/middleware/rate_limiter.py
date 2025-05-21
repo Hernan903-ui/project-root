@@ -4,7 +4,7 @@ from typing import Dict, List, Tuple
 import asyncio
 
 class RateLimiter:
-    def __init__(self, calls: int = 10, period: int = 60):
+    def __init__(self, calls: int = 100, period: int = 60):  # Cambiado de 10 a 100
         self.calls = calls  # número máximo de llamadas permitidas en el período
         self.period = period  # período en segundos
         self.tokens: Dict[str, List[float]] = {}  # diccionario para almacenar tokens
@@ -36,7 +36,7 @@ class RateLimiter:
             return False
 
 # Instancia global del limitador de velocidad
-rate_limiter = RateLimiter()
+rate_limiter = RateLimiter()  # Ahora usa los nuevos valores por defecto: 100 llamadas en 60 segundos
 
 async def rate_limiting_middleware(request: Request, call_next):
     """Middleware para implementar rate limiting."""

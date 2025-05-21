@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
   Box,
-  Grid,
   TextField,
   Button,
   Typography,
@@ -13,8 +12,11 @@ import {
   FormControl,
   InputLabel,
   Select,
-  CircularProgress
+  CircularProgress,
+  Alert,
+  Grid
 } from '@mui/material';
+import GridItem from '../common/GridItem'; // Importamos el componente GridItem personalizado
 import { Save as SaveIcon, Cancel as CancelIcon } from '@mui/icons-material';
 
 const SupplierForm = ({ 
@@ -43,31 +45,47 @@ const SupplierForm = ({
   });
 
   const [formErrors, setFormErrors] = useState({});
+  const [touched, setTouched] = useState({});
 
   useEffect(() => {
     if (initialData) {
-      setFormData({ ...initialData });
+      setFormData(prevData => ({ ...prevData, ...initialData }));
     }
   }, [initialData]);
 
   const handleChange = (e) => {
     const { name, value, checked, type } = e.target;
-    setFormData({
-      ...formData,
+    
+    setFormData(prevData => ({
+      ...prevData,
       [name]: type === 'checkbox' ? checked : value
-    });
+    }));
+    
+    // Marcar campo como tocado
+    setTouched(prevTouched => ({
+      ...prevTouched,
+      [name]: true
+    }));
     
     // Clear error for this field
     if (formErrors[name]) {
-      setFormErrors({
-        ...formErrors,
+      setFormErrors(prevErrors => ({
+        ...prevErrors,
         [name]: null
-      });
+      }));
     }
   };
 
   const validateForm = () => {
     const errors = {};
+    
+    // Marcar todos los campos como tocados
+    const allTouched = Object.keys(formData).reduce((acc, key) => {
+      acc[key] = true;
+      return acc;
+    }, {});
+    setTouched(allTouched);
+    
     if (!formData.name.trim()) errors.name = 'El nombre es requerido';
     if (!formData.contactName.trim()) errors.contactName = 'El contacto es requerido';
     if (!formData.email.trim()) errors.email = 'El email es requerido';
@@ -87,6 +105,31 @@ const SupplierForm = ({
     }
   };
 
+  const handleBlur = (e) => {
+    const { name } = e.target;
+    setTouched(prevTouched => ({
+      ...prevTouched,
+      [name]: true
+    }));
+    
+    // Validación en tiempo real para algunos campos
+    const errors = { ...formErrors };
+    
+    if (name === 'name' && !formData.name.trim()) {
+      errors.name = 'El nombre es requerido';
+    }
+    
+    if (name === 'email') {
+      if (!formData.email.trim()) {
+        errors.email = 'El email es requerido';
+      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+        errors.email = 'Email inválido';
+      }
+    }
+    
+    setFormErrors(errors);
+  };
+
   return (
     <Paper component="form" onSubmit={handleSubmit} sx={{ p: 3 }}>
       <Typography variant="h6" gutterBottom>
@@ -94,20 +137,28 @@ const SupplierForm = ({
       </Typography>
       <Divider sx={{ mb: 3 }} />
 
+      {error && (
+        <Alert severity="error" sx={{ mb: 3 }}>
+          {typeof error === 'object' ? (error?.detail || error?.message || 'Ha ocurrido un error') : error}
+        </Alert>
+      )}
+
       <Grid container spacing={3}>
-        <Grid item xs={12} md={6}>
+        <GridItem xs={12} md={6}>
           <TextField
             fullWidth
             label="Nombre de la Empresa"
             name="name"
             value={formData.name}
             onChange={handleChange}
-            error={!!formErrors.name}
-            helperText={formErrors.name}
+            onBlur={handleBlur}
+            error={touched.name && !!formErrors.name}
+            helperText={touched.name && formErrors.name}
             required
+            autoFocus
           />
-        </Grid>
-        <Grid item xs={12} md={6}>
+        </GridItem>
+        <GridItem xs={12} md={6}>
           <FormControl fullWidth>
             <InputLabel id="category-label">Categoría</InputLabel>
             <Select
@@ -125,21 +176,22 @@ const SupplierForm = ({
               <MenuItem value="other">Otros</MenuItem>
             </Select>
           </FormControl>
-        </Grid>
+        </GridItem>
 
-        <Grid item xs={12} md={6}>
+        <GridItem xs={12} md={6}>
           <TextField
             fullWidth
             label="Nombre de Contacto"
             name="contactName"
             value={formData.contactName}
             onChange={handleChange}
-            error={!!formErrors.contactName}
-            helperText={formErrors.contactName}
+            onBlur={handleBlur}
+            error={touched.contactName && !!formErrors.contactName}
+            helperText={touched.contactName && formErrors.contactName}
             required
           />
-        </Grid>
-        <Grid item xs={12} md={6}>
+        </GridItem>
+        <GridItem xs={12} md={6}>
           <TextField
             fullWidth
             label="Email"
@@ -147,42 +199,45 @@ const SupplierForm = ({
             type="email"
             value={formData.email}
             onChange={handleChange}
-            error={!!formErrors.email}
-            helperText={formErrors.email}
+            onBlur={handleBlur}
+            error={touched.email && !!formErrors.email}
+            helperText={touched.email && formErrors.email}
             required
           />
-        </Grid>
+        </GridItem>
 
-        <Grid item xs={12} md={6}>
+        <GridItem xs={12} md={6}>
           <TextField
             fullWidth
             label="Teléfono"
             name="phone"
             value={formData.phone}
             onChange={handleChange}
-            error={!!formErrors.phone}
-            helperText={formErrors.phone}
+            onBlur={handleBlur}
+            error={touched.phone && !!formErrors.phone}
+            helperText={touched.phone && formErrors.phone}
             required
           />
-        </Grid>
-        <Grid item xs={12} md={6}>
+        </GridItem>
+        <GridItem xs={12} md={6}>
           <TextField
             fullWidth
             label="Sitio Web"
             name="website"
             value={formData.website}
             onChange={handleChange}
+            placeholder="https://example.com"
           />
-        </Grid>
+        </GridItem>
 
-        <Grid item xs={12}>
+        <GridItem xs={12} sx={{ mt: 2 }}>
           <Typography variant="subtitle1" gutterBottom>
             Dirección
           </Typography>
           <Divider sx={{ mb: 2 }} />
-        </Grid>
+        </GridItem>
 
-        <Grid item xs={12}>
+        <GridItem xs={12}>
           <TextField
             fullWidth
             label="Dirección"
@@ -190,9 +245,9 @@ const SupplierForm = ({
             value={formData.address}
             onChange={handleChange}
           />
-        </Grid>
+        </GridItem>
 
-        <Grid item xs={12} md={3}>
+        <GridItem xs={12} sm={6} md={3}>
           <TextField
             fullWidth
             label="Ciudad"
@@ -200,8 +255,8 @@ const SupplierForm = ({
             value={formData.city}
             onChange={handleChange}
           />
-        </Grid>
-        <Grid item xs={12} md={3}>
+        </GridItem>
+        <GridItem xs={12} sm={6} md={3}>
           <TextField
             fullWidth
             label="Estado/Provincia"
@@ -209,8 +264,8 @@ const SupplierForm = ({
             value={formData.state}
             onChange={handleChange}
           />
-        </Grid>
-        <Grid item xs={12} md={3}>
+        </GridItem>
+        <GridItem xs={12} sm={6} md={3}>
           <TextField
             fullWidth
             label="Código Postal"
@@ -218,8 +273,8 @@ const SupplierForm = ({
             value={formData.postalCode}
             onChange={handleChange}
           />
-        </Grid>
-        <Grid item xs={12} md={3}>
+        </GridItem>
+        <GridItem xs={12} sm={6} md={3}>
           <TextField
             fullWidth
             label="País"
@@ -227,16 +282,16 @@ const SupplierForm = ({
             value={formData.country}
             onChange={handleChange}
           />
-        </Grid>
+        </GridItem>
 
-        <Grid item xs={12}>
+        <GridItem xs={12} sx={{ mt: 2 }}>
           <Typography variant="subtitle1" gutterBottom>
             Información Adicional
           </Typography>
           <Divider sx={{ mb: 2 }} />
-        </Grid>
+        </GridItem>
 
-        <Grid item xs={12} md={6}>
+        <GridItem xs={12} md={6}>
           <TextField
             fullWidth
             label="Identificación Fiscal"
@@ -244,8 +299,8 @@ const SupplierForm = ({
             value={formData.taxId}
             onChange={handleChange}
           />
-        </Grid>
-        <Grid item xs={12} md={6}>
+        </GridItem>
+        <GridItem xs={12} md={6}>
           <TextField
             fullWidth
             label="Términos de Pago"
@@ -254,9 +309,9 @@ const SupplierForm = ({
             onChange={handleChange}
             placeholder="Ej: 30 días, Contado, etc."
           />
-        </Grid>
+        </GridItem>
 
-        <Grid item xs={12}>
+        <GridItem xs={12}>
           <TextField
             fullWidth
             label="Notas"
@@ -266,9 +321,9 @@ const SupplierForm = ({
             multiline
             rows={3}
           />
-        </Grid>
+        </GridItem>
 
-        <Grid item xs={12}>
+        <GridItem xs={12}>
           <FormControlLabel
             control={
               <Switch
@@ -278,17 +333,11 @@ const SupplierForm = ({
                 color="primary"
               />
             }
-            label="Proveedor Activo"
+            label={formData.active ? "Proveedor Activo" : "Proveedor Inactivo"}
           />
-        </Grid>
+        </GridItem>
 
-        {error && (
-          <Grid item xs={12}>
-            <Typography color="error">{error}</Typography>
-          </Grid>
-        )}
-
-        <Grid item xs={12}>
+        <GridItem xs={12} sx={{ mt: 2 }}>
           <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
             <Button
               variant="outlined"
@@ -302,13 +351,13 @@ const SupplierForm = ({
               type="submit"
               variant="contained"
               color="primary"
-              startIcon={loading ? <CircularProgress size={24} /> : <SaveIcon />}
+              startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <SaveIcon />}
               disabled={loading}
             >
-              {initialData ? 'Actualizar' : 'Guardar'}
+              {loading ? (initialData ? 'Actualizando...' : 'Guardando...') : (initialData ? 'Actualizar' : 'Guardar')}
             </Button>
           </Box>
-        </Grid>
+        </GridItem>
       </Grid>
     </Paper>
   );

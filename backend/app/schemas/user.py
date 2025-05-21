@@ -26,9 +26,13 @@ class UserInDBBase(UserBase):
     updated_at: Optional[datetime] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True  # Actualizado de orm_mode a from_attributes
 
 class User(UserInDBBase):
+    pass
+
+# Renombrado User a UserRead para coincidir con la importación en users.py
+class UserRead(UserInDBBase):
     pass
 
 class UserInDB(UserInDBBase):

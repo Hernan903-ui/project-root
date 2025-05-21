@@ -1,15 +1,44 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import * as supplierApi from '../../api/supplierApi';
 
+// Función auxiliar para manejar errores de manera consistente
+const handleError = (error) => {
+  // Manejar errores de red específicamente
+  if (error.code === 'ECONNABORTED' || !error.response) {
+    console.error('Error de conexión:', error.message);
+    return 'Error de conexión. Usando datos alternativos.';
+  }
+  
+  // Otros errores de respuesta
+  return error.response?.data?.detail || 
+         error.response?.data?.message || 
+         error.message || 
+         'Error desconocido';
+};
+
 // Thunks para proveedores
 export const fetchSuppliers = createAsyncThunk(
   'suppliers/fetchSuppliers',
   async (params, { rejectWithValue }) => {
     try {
       const response = await supplierApi.fetchSuppliers(params);
-      return response.data;
+      
+      // Verificar si estamos utilizando datos de respaldo
+      const isFallbackData = response.headers && response.headers['x-fallback-data'] === 'true';
+      const errorMsg = response.headers && response.headers['x-error'];
+      
+      return {
+        ...(response.data || {}),
+        isFallbackData,
+        errorMsg
+      };
     } catch (error) {
-      return rejectWithValue(error.response?.data || error.message);
+      console.error('Error al cargar proveedores:', error);
+      // Si ya tenemos datos de respaldo, no mostramos error
+      if (error.fallbackData) {
+        return error.fallbackData;
+      }
+      return rejectWithValue(handleError(error));
     }
   }
 );
@@ -19,9 +48,22 @@ export const fetchSupplierById = createAsyncThunk(
   async (id, { rejectWithValue }) => {
     try {
       const response = await supplierApi.fetchSupplierById(id);
-      return response.data;
+      
+      // Verificar si estamos utilizando datos de respaldo
+      const isFallbackData = response.headers && response.headers['x-fallback-data'] === 'true';
+      const errorMsg = response.headers && response.headers['x-error'];
+      
+      return {
+        ...(response.data || {}),
+        isFallbackData,
+        errorMsg
+      };
     } catch (error) {
-      return rejectWithValue(error.response?.data || error.message);
+      console.error(`Error al cargar proveedor ${id}:`, error);
+      if (error.fallbackData) {
+        return error.fallbackData;
+      }
+      return rejectWithValue(handleError(error));
     }
   }
 );
@@ -33,7 +75,7 @@ export const createSupplier = createAsyncThunk(
       const response = await supplierApi.createSupplier(supplierData);
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data || error.message);
+      return rejectWithValue(handleError(error));
     }
   }
 );
@@ -45,7 +87,7 @@ export const updateSupplier = createAsyncThunk(
       const response = await supplierApi.updateSupplier(id, supplierData);
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data || error.message);
+      return rejectWithValue(handleError(error));
     }
   }
 );
@@ -57,7 +99,7 @@ export const deleteSupplier = createAsyncThunk(
       await supplierApi.deleteSupplier(id);
       return id;
     } catch (error) {
-      return rejectWithValue(error.response?.data || error.message);
+      return rejectWithValue(handleError(error));
     }
   }
 );
@@ -68,9 +110,23 @@ export const fetchPurchaseOrders = createAsyncThunk(
   async (params, { rejectWithValue }) => {
     try {
       const response = await supplierApi.fetchPurchaseOrders(params);
-      return response.data;
+      
+      // Verificar si estamos utilizando datos de respaldo
+      const isFallbackData = response.headers && response.headers['x-fallback-data'] === 'true';
+      const errorMsg = response.headers && response.headers['x-error'];
+      
+      return {
+        ...(response.data || {}),
+        isFallbackData,
+        errorMsg
+      };
     } catch (error) {
-      return rejectWithValue(error.response?.data || error.message);
+      console.error('Error al cargar órdenes de compra:', error);
+      // Si ya tenemos datos de respaldo, no mostramos error
+      if (error.fallbackData) {
+        return error.fallbackData;
+      }
+      return rejectWithValue(handleError(error));
     }
   }
 );
@@ -80,9 +136,22 @@ export const fetchPurchaseOrderById = createAsyncThunk(
   async (id, { rejectWithValue }) => {
     try {
       const response = await supplierApi.fetchPurchaseOrderById(id);
-      return response.data;
+      
+      // Verificar si estamos utilizando datos de respaldo
+      const isFallbackData = response.headers && response.headers['x-fallback-data'] === 'true';
+      const errorMsg = response.headers && response.headers['x-error'];
+      
+      return {
+        ...(response.data || {}),
+        isFallbackData,
+        errorMsg
+      };
     } catch (error) {
-      return rejectWithValue(error.response?.data || error.message);
+      console.error(`Error al cargar orden de compra ${id}:`, error);
+      if (error.fallbackData) {
+        return error.fallbackData;
+      }
+      return rejectWithValue(handleError(error));
     }
   }
 );
@@ -94,7 +163,7 @@ export const createPurchaseOrder = createAsyncThunk(
       const response = await supplierApi.createPurchaseOrder(orderData);
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data || error.message);
+      return rejectWithValue(handleError(error));
     }
   }
 );
@@ -106,7 +175,7 @@ export const updatePurchaseOrder = createAsyncThunk(
       const response = await supplierApi.updatePurchaseOrder(id, orderData);
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data || error.message);
+      return rejectWithValue(handleError(error));
     }
   }
 );
@@ -118,7 +187,7 @@ export const deletePurchaseOrder = createAsyncThunk(
       await supplierApi.deletePurchaseOrder(id);
       return id;
     } catch (error) {
-      return rejectWithValue(error.response?.data || error.message);
+      return rejectWithValue(handleError(error));
     }
   }
 );
@@ -130,7 +199,7 @@ export const receiveInventory = createAsyncThunk(
       const response = await supplierApi.receiveInventory(orderId, receivedItems);
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data || error.message);
+      return rejectWithValue(handleError(error));
     }
   }
 );
@@ -146,6 +215,8 @@ const suppliersSlice = createSlice({
     error: null,
     totalSuppliers: 0,
     totalPurchaseOrders: 0,
+    usingFallbackData: false, // Nuevo estado para indicar si estamos usando datos de respaldo
+    connectionIssue: false, // Nuevo estado para indicar problemas de conexión persistentes
   },
   reducers: {
     clearCurrentSupplier: (state) => {
@@ -157,6 +228,9 @@ const suppliersSlice = createSlice({
     clearErrors: (state) => {
       state.error = null;
     },
+    setConnectionStatus: (state, action) => {
+      state.connectionIssue = action.payload;
+    }
   },
   extraReducers: (builder) => {
     builder
@@ -167,12 +241,32 @@ const suppliersSlice = createSlice({
       })
       .addCase(fetchSuppliers.fulfilled, (state, action) => {
         state.loading = false;
-        state.suppliers = action.payload.items;
-        state.totalSuppliers = action.payload.total;
+        state.suppliers = action.payload.items || [];
+        state.totalSuppliers = action.payload.total || action.payload.items?.length || 0;
+        
+        // Determinar si estamos usando datos de respaldo
+        state.usingFallbackData = action.payload.isFallbackData === true;
+        
+        // Establecer mensaje de advertencia si estamos usando datos de respaldo
+        if (state.usingFallbackData) {
+          if (action.payload.errorMsg) {
+            state.error = `Error: ${action.payload.errorMsg} (usando datos de respaldo)`;
+          } else {
+            state.error = 'Mostrando datos de respaldo debido a problemas de conexión';
+          }
+          state.connectionIssue = true;
+        } else {
+          state.connectionIssue = false;
+        }
       })
       .addCase(fetchSuppliers.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload || 'Error al cargar proveedores';
+        // Si no hay datos, proporcionar una lista vacía
+        if (!state.suppliers.length) {
+          state.suppliers = [];
+        }
+        state.connectionIssue = true;
       })
       .addCase(fetchSupplierById.pending, (state) => {
         state.loading = true;
@@ -181,10 +275,26 @@ const suppliersSlice = createSlice({
       .addCase(fetchSupplierById.fulfilled, (state, action) => {
         state.loading = false;
         state.currentSupplier = action.payload;
+        
+        // Determinar si estamos usando datos de respaldo
+        state.usingFallbackData = action.payload.isFallbackData === true;
+        
+        // Establecer mensaje de advertencia si estamos usando datos de respaldo
+        if (state.usingFallbackData) {
+          if (action.payload.errorMsg) {
+            state.error = `Error: ${action.payload.errorMsg} (usando datos de respaldo)`;
+          } else {
+            state.error = 'Mostrando datos de respaldo debido a problemas de conexión';
+          }
+          state.connectionIssue = true;
+        } else {
+          state.connectionIssue = false;
+        }
       })
       .addCase(fetchSupplierById.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload || 'Error al cargar detalles del proveedor';
+        state.connectionIssue = true;
       })
       .addCase(createSupplier.pending, (state) => {
         state.loading = true;
@@ -241,12 +351,33 @@ const suppliersSlice = createSlice({
       })
       .addCase(fetchPurchaseOrders.fulfilled, (state, action) => {
         state.loading = false;
-        state.purchaseOrders = action.payload.items;
-        state.totalPurchaseOrders = action.payload.total;
+        state.purchaseOrders = action.payload.items || [];
+        state.totalPurchaseOrders = action.payload.total || action.payload.items?.length || 0;
+        
+        // Determinar si estamos usando datos de respaldo
+        state.usingFallbackData = action.payload.isFallbackData === true;
+        
+        // Establecer mensaje de advertencia si estamos usando datos de respaldo
+        if (state.usingFallbackData) {
+          if (action.payload.errorMsg) {
+            state.error = `Error: ${action.payload.errorMsg} (usando datos de respaldo)`;
+          } else {
+            state.error = 'Mostrando datos de respaldo debido a problemas de conexión';
+          }
+          state.connectionIssue = true;
+        } else {
+          state.error = null;
+          state.connectionIssue = false;
+        }
       })
       .addCase(fetchPurchaseOrders.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload || 'Error al cargar órdenes de compra';
+        // Si no hay datos, proporcionar una lista vacía
+        if (!state.purchaseOrders.length) {
+          state.purchaseOrders = [];
+        }
+        state.connectionIssue = true;
       })
       .addCase(fetchPurchaseOrderById.pending, (state) => {
         state.loading = true;
@@ -255,10 +386,26 @@ const suppliersSlice = createSlice({
       .addCase(fetchPurchaseOrderById.fulfilled, (state, action) => {
         state.loading = false;
         state.currentPurchaseOrder = action.payload;
+        
+        // Determinar si estamos usando datos de respaldo
+        state.usingFallbackData = action.payload.isFallbackData === true;
+        
+        // Establecer mensaje de advertencia si estamos usando datos de respaldo
+        if (state.usingFallbackData) {
+          if (action.payload.errorMsg) {
+            state.error = `Error: ${action.payload.errorMsg} (usando datos de respaldo)`;
+          } else {
+            state.error = 'Mostrando datos de respaldo debido a problemas de conexión';
+          }
+          state.connectionIssue = true;
+        } else {
+          state.connectionIssue = false;
+        }
       })
       .addCase(fetchPurchaseOrderById.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload || 'Error al cargar detalles de la orden';
+        state.connectionIssue = true;
       })
       .addCase(createPurchaseOrder.pending, (state) => {
         state.loading = true;
@@ -329,10 +476,11 @@ const suppliersSlice = createSlice({
   },
 });
 
-export const { 
-  clearCurrentSupplier, 
-  clearCurrentPurchaseOrder, 
-  clearErrors 
+export const {
+clearCurrentSupplier,
+clearCurrentPurchaseOrder,
+clearErrors,
+setConnectionStatus
 } = suppliersSlice.actions;
 
 export default suppliersSlice.reducer;

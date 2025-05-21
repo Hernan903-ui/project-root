@@ -17,8 +17,24 @@ import {
 } from '@mui/icons-material';
 
 const CustomerCard = ({ customer, onClick }) => {
-  // Genera iniciales para el avatar
+  // Genera iniciales para el avatar con validación para evitar errores
   const getInitials = (name) => {
+    // Verificar si name existe y es un string
+    if (!name || typeof name !== 'string') {
+      // Si el cliente tiene firstName y lastName, usarlos para crear el nombre
+      if (customer?.firstName && customer?.lastName) {
+        const fullName = `${customer.firstName} ${customer.lastName}`;
+        return fullName
+          .split(' ')
+          .map(word => word[0])
+          .join('')
+          .substring(0, 2)
+          .toUpperCase();
+      }
+      // Si no hay nombre disponible, retornar valor por defecto
+      return 'CL';
+    }
+    
     return name
       .split(' ')
       .map(word => word[0])
@@ -31,6 +47,25 @@ const CustomerCard = ({ customer, onClick }) => {
   const getAvatarColor = (type) => {
     return type === 'business' ? 'primary.main' : 'secondary.main';
   };
+
+  // Si no hay cliente, mostrar una tarjeta de fallback
+  if (!customer) {
+    return (
+      <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+        <CardContent>
+          <Typography variant="body2" color="text.secondary">
+            Cliente no disponible
+          </Typography>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Crear un nombre para mostrar si no existe la propiedad name
+  const displayName = customer.name || 
+    (customer.firstName && customer.lastName 
+      ? `${customer.firstName} ${customer.lastName}`
+      : customer.firstName || customer.lastName || "Cliente sin nombre");
 
   return (
     <Card sx={{ 
@@ -52,11 +87,11 @@ const CustomerCard = ({ customer, onClick }) => {
                 mr: 2 
               }}
             >
-              {customer.type === 'business' ? <BusinessIcon /> : getInitials(customer.name)}
+              {customer.type === 'business' ? <BusinessIcon /> : getInitials(displayName)}
             </Avatar>
             <Box sx={{ minWidth: 0 }}>
-              <Typography variant="h6" noWrap title={customer.name}>
-                {customer.name}
+              <Typography variant="h6" noWrap title={displayName}>
+                {displayName}
               </Typography>
               {customer.type === 'business' && customer.companyName && (
                 <Typography variant="body2" color="text.secondary" noWrap title={customer.companyName}>

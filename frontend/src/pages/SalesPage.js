@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { setSelectedSale } from '../features/sales/salesSlice';
 import {
@@ -15,7 +15,8 @@ import {
   DialogActions,
   useTheme,
   useMediaQuery,
-  Alert
+  Alert,
+  Fade
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -38,12 +39,13 @@ import SaleDetails from '../components/sales/SaleDetails';
 import ReturnForm from '../components/sales/ReturnForm';
 import CancelSaleForm from '../components/sales/CancelSaleForm';
 import SalesStatistics from '../components/sales/SalesStatistics';
-import { generatePDF } from '../utils/reportGenerator'; // **Corregido**
+import { generatePDF } from '../utils/reportGenerator';
 
 const SalesPage = () => {
   const dispatch = useDispatch();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const isMediumScreen = useMediaQuery(theme.breakpoints.down('md'));
 
   const {
     sales,
@@ -65,10 +67,13 @@ const SalesPage = () => {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
 
+  // Cargar ventas al inicio
   useEffect(() => {
     dispatch(fetchSales());
+  }, [dispatch]);
 
-    // Solo cargar estadísticas si estamos en la pestaña de estadísticas
+  // Cargar estadísticas cuando cambia la pestaña
+  useEffect(() => {
     if (activeTab === 1) {
       dispatch(fetchSalesStatistics());
     }
@@ -85,32 +90,32 @@ const SalesPage = () => {
     }
   }, [success, returnSuccess, cancelSuccess, dispatch]);
 
-  const handleTabChange = (event, newValue) => {
+  const handleTabChange = useCallback((event, newValue) => {
     setActiveTab(newValue);
-  };
+  }, []);
 
-  const handleViewDetails = (sale) => {
+  const handleViewDetails = useCallback((sale) => {
     dispatch(setSelectedSale(sale));
     setDetailsOpen(true);
-  };
+  }, [dispatch]);
 
-  const handlePrintReceipt = (sale) => {
+  const handlePrintReceipt = useCallback((sale) => {
     // Implementación de impresión de recibo
     console.log('Imprimiendo recibo para venta:', sale.id);
     // Aquí iría la lógica de impresión
-  };
+  }, []);
 
-  const handleCancelSaleClick = (sale) => {
+  const handleCancelSaleClick = useCallback((sale) => {
     dispatch(setSelectedSale(sale));
     setCancelOpen(true);
-  };
+  }, [dispatch]);
 
-  const handleReturnClick = (sale) => {
+  const handleReturnClick = useCallback((sale) => {
     dispatch(setSelectedSale(sale));
     setReturnOpen(true);
-  };
+  }, [dispatch]);
 
-  const handleSubmitCancel = (cancelData) => {
+  const handleSubmitCancel = useCallback((cancelData) => {
     dispatch(cancelSale(cancelData))
       .then((result) => {
         if (!result.error) {
@@ -118,9 +123,9 @@ const SalesPage = () => {
           dispatch(fetchSales());
         }
       });
-  };
+  }, [dispatch]);
 
-  const handleSubmitReturn = (returnData) => {
+  const handleSubmitReturn = useCallback((returnData) => {
     dispatch(processReturn({ id: selectedSale.id, returnData }))
       .then((result) => {
         if (!result.error) {
@@ -128,22 +133,22 @@ const SalesPage = () => {
           dispatch(fetchSales());
         }
       });
-  };
+  }, [dispatch, selectedSale]);
 
-  const handlePageChange = (event, newPage) => {
+  const handlePageChange = useCallback((event, newPage) => {
     setPage(newPage);
-  };
+  }, []);
 
-  const handleRowsPerPageChange = (event) => {
+  const handleRowsPerPageChange = useCallback((event) => {
     setRowsPerPage(parseInt(event.target.value, 10));
     setPage(0);
-  };
+  }, []);
 
-  const handleFilterChange = (filters) => {
+  const handleFilterChange = useCallback((filters) => {
     dispatch(filterSales(filters));
-  };
+  }, [dispatch]);
 
-  const handleExportSales = () => {
+  const handleExportSales = useCallback(() => {
     const columnsToExport = [
       { header: 'Recibo #', field: 'receiptNumber' },
       { header: 'Fecha', field: 'date', formatter: (date) => new Date(date).toLocaleString() },
@@ -153,57 +158,137 @@ const SalesPage = () => {
     ];
 
     generatePDF('Reporte de Ventas', filteredSales, columnsToExport);
-  };
+  }, [filteredSales]);
 
-  const handleRefresh = () => {
+  const handleRefresh = useCallback(() => {
     dispatch(fetchSales());
     if (activeTab === 1) {
       dispatch(fetchSalesStatistics());
     }
-  };
+  }, [dispatch, activeTab]);
+
+  const handleCloseDetails = useCallback(() => {
+    setDetailsOpen(false);
+  }, []);
+
+  const handleCloseReturn = useCallback(() => {
+    setReturnOpen(false);
+  }, []);
+
+  const handleCloseCancel = useCallback(() => {
+    setCancelOpen(false);
+  }, []);
+
+  // Obtener los datos paginados para la tabla
+  const paginatedSales = filteredSales.slice(
+    page * rowsPerPage,
+    page * rowsPerPage + rowsPerPage
+  );
 
   return (
-    <Box sx={{ p: 3 }}>
-      <Typography variant="h4" gutterBottom>
+    <Box sx={{ width: '100%', p: { xs: 2, sm: 3 } }}>
+      <Typography variant="h4" gutterBottom sx={{ mb: 3 }}>
         Gestión de Ventas
       </Typography>
 
-      {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
-          {error}
-        </Alert>
-      )}
+      {/* Alertas con transición */}
+      <Box sx={{ mb: 2 }}>
+        {error && (
+          <Fade in={!!error}>
+            <Alert 
+              severity="error" 
+              variant="filled"
+              onClose={() => dispatch(clearSalesState())}
+              sx={{ mb: 1 }}
+            >
+              {typeof error === 'object' ? error.message : error}
+            </Alert>
+          </Fade>
+        )}
 
-      {success && (
-        <Alert severity="success" sx={{ mb: 2 }}>
-          Operación completada con éxito
-        </Alert>
-      )}
+        {success && (
+          <Fade in={success}>
+            <Alert 
+              severity="success" 
+              variant="filled"
+              sx={{ mb: 1 }}
+            >
+              Operación completada con éxito
+            </Alert>
+          </Fade>
+        )}
 
-      {returnSuccess && (
-        <Alert severity="success" sx={{ mb: 2 }}>
-          Devolución procesada correctamente
-        </Alert>
-      )}
+        {returnSuccess && (
+          <Fade in={returnSuccess}>
+            <Alert 
+              severity="success" 
+              variant="filled"
+              sx={{ mb: 1 }}
+            >
+              Devolución procesada correctamente
+            </Alert>
+          </Fade>
+        )}
 
-      {cancelSuccess && (
-        <Alert severity="success" sx={{ mb: 2 }}>
-          Venta cancelada correctamente
-        </Alert>
-      )}
+        {cancelSuccess && (
+          <Fade in={cancelSuccess}>
+            <Alert 
+              severity="success" 
+              variant="filled"
+              sx={{ mb: 1 }}
+            >
+              Venta cancelada correctamente
+            </Alert>
+          </Fade>
+        )}
+      </Box>
 
-      <Paper sx={{ p: 2, mb: 3 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-          <Tabs value={activeTab} onChange={handleTabChange}>
+      <Paper 
+        elevation={2} 
+        sx={{ 
+          p: { xs: 2, sm: 3 }, 
+          mb: 3,
+          borderRadius: 2,
+          overflow: 'hidden'
+        }}
+      >
+        <Box sx={{ 
+          display: 'flex',
+          flexDirection: { xs: 'column', sm: 'row' },
+          justifyContent: 'space-between', 
+          alignItems: { xs: 'flex-start', sm: 'center' }, 
+          gap: 2,
+          mb: 3
+        }}>
+          <Tabs 
+            value={activeTab} 
+            onChange={handleTabChange}
+            variant={isMediumScreen ? "fullWidth" : "standard"}
+            sx={{ 
+              minHeight: 48,
+              '& .MuiTab-root': {
+                minHeight: 48,
+                py: 1
+              }
+            }}
+          >
             <Tab label="Ventas" />
             <Tab label="Estadísticas" />
           </Tabs>
 
-          <Box sx={{ display: 'flex', gap: 1 }}>
+          <Box sx={{ 
+            display: 'flex', 
+            flexWrap: 'wrap',
+            gap: 1,
+            width: { xs: '100%', sm: 'auto' },
+            justifyContent: { xs: 'flex-end', sm: 'flex-end' }
+          }}>
             <Button
               startIcon={<RefreshIcon />}
               onClick={handleRefresh}
               size="small"
+              variant="outlined"
+              disabled={loading || statisticsLoading}
             >
               Actualizar
             </Button>
@@ -214,6 +299,8 @@ const SalesPage = () => {
                   startIcon={<ExportIcon />}
                   onClick={handleExportSales}
                   size="small"
+                  variant="outlined"
+                  disabled={filteredSales.length === 0 || loading}
                 >
                   Exportar
                 </Button>
@@ -234,6 +321,8 @@ const SalesPage = () => {
               <Button
                 startIcon={<PrintIcon />}
                 size="small"
+                variant="outlined"
+                disabled={statisticsLoading || !statistics}
               >
                 Imprimir Reporte
               </Button>
@@ -246,12 +335,18 @@ const SalesPage = () => {
             <SalesFilters onFilterChange={handleFilterChange} />
 
             {loading ? (
-              <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+              <Box sx={{ 
+                display: 'flex', 
+                justifyContent: 'center', 
+                alignItems: 'center',
+                minHeight: 300,
+                p: 3 
+              }}>
                 <CircularProgress />
               </Box>
             ) : (
               <SalesTable
-                sales={filteredSales.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)}
+                sales={paginatedSales}
                 onViewDetails={handleViewDetails}
                 onPrintReceipt={handlePrintReceipt}
                 onCancelSale={handleCancelSaleClick}
@@ -277,15 +372,20 @@ const SalesPage = () => {
       {/* Modal de detalles de venta */}
       <Dialog
         open={detailsOpen}
-        onClose={() => setDetailsOpen(false)}
+        onClose={handleCloseDetails}
         maxWidth="lg"
         fullWidth
         fullScreen={isMobile}
+        scroll="paper"
+        PaperProps={{
+          elevation: 5,
+          sx: { borderRadius: isMobile ? 0 : 2 }
+        }}
       >
-        <DialogTitle>
+        <DialogTitle sx={{ py: 2, bgcolor: theme => theme.palette.mode === 'dark' ? 'grey.900' : 'grey.100' }}>
           Detalles de Venta
         </DialogTitle>
-        <DialogContent>
+        <DialogContent dividers>
           <SaleDetails
             sale={selectedSale}
             onPrint={handlePrintReceipt}
@@ -293,8 +393,11 @@ const SalesPage = () => {
             onCancel={handleCancelSaleClick}
           />
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setDetailsOpen(false)}>
+        <DialogActions sx={{ py: 1.5, px: 3 }}>
+          <Button 
+            onClick={handleCloseDetails}
+            variant="outlined"
+          >
             Cerrar
           </Button>
         </DialogActions>
@@ -303,15 +406,20 @@ const SalesPage = () => {
       {/* Modal de devolución */}
       <Dialog
         open={returnOpen}
-        onClose={() => setReturnOpen(false)}
+        onClose={handleCloseReturn}
         maxWidth="md"
         fullWidth
         fullScreen={isMobile}
+        scroll="paper"
+        PaperProps={{
+          elevation: 5,
+          sx: { borderRadius: isMobile ? 0 : 2 }
+        }}
       >
-        <DialogTitle>
+        <DialogTitle sx={{ py: 2, bgcolor: theme => theme.palette.mode === 'dark' ? 'grey.900' : 'grey.100' }}>
           Procesar Devolución
         </DialogTitle>
-        <DialogContent>
+        <DialogContent dividers>
           <ReturnForm
             sale={selectedSale}
             onSubmit={handleSubmitReturn}
@@ -324,14 +432,18 @@ const SalesPage = () => {
       {/* Modal de cancelación */}
       <Dialog
         open={cancelOpen}
-        onClose={() => setCancelOpen(false)}
+        onClose={handleCloseCancel}
         maxWidth="sm"
         fullWidth
+        PaperProps={{
+          elevation: 5,
+          sx: { borderRadius: 2 }
+        }}
       >
-        <DialogTitle>
+        <DialogTitle sx={{ py: 2, bgcolor: theme => theme.palette.mode === 'dark' ? 'grey.900' : 'grey.100' }}>
           Cancelar Venta
         </DialogTitle>
-        <DialogContent>
+        <DialogContent dividers>
           <CancelSaleForm
             sale={selectedSale}
             onCancel={handleSubmitCancel}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   Box,
@@ -7,11 +7,13 @@ import {
   CircularProgress,
   Alert,
   Divider,
-  Button
+  Button,
+  useTheme
 } from '@mui/material';
 import {
   FileDownload as DownloadIcon,
-  Refresh as RefreshIcon
+  Refresh as RefreshIcon,
+  Description as ReportIcon
 } from '@mui/icons-material';
 import {
   fetchSalesReport,
@@ -33,6 +35,7 @@ import CustomersReport from '../components/reports/CustomersReport';
 import FinancialReport from '../components/reports/FinancialReport';
 
 const ReportsPage = () => {
+  const theme = useTheme();
   const dispatch = useDispatch();
   const { 
     currentReport, 
@@ -51,15 +54,23 @@ const ReportsPage = () => {
       const startDate = new Date();
       startDate.setDate(startDate.getDate() - 30);
       
+      // Enviar las fechas al store de Redux
       dispatch(setDateRange({ start: startDate, end: endDate }));
     }
   }, [dispatch, dateRange]);
 
-  // Función para generar el reporte actual
-  const generateReport = () => {
+  // Convertir strings ISO a objetos Date si es necesario para la UI
+  const getDateObject = useCallback((isoString) => {
+    return isoString ? new Date(isoString) : null;
+  }, []);
+
+  // Función para generar el reporte actual (con useCallback)
+  const generateReport = useCallback(() => {
+    if (!currentReport) return;
+
     const params = {
-      startDate: dateRange.start ? dateRange.start.toISOString() : null,
-      endDate: dateRange.end ? dateRange.end.toISOString() : null,
+      startDate: dateRange.start,
+      endDate: dateRange.end,
       ...additionalFilters
     };
 
@@ -79,59 +90,75 @@ const ReportsPage = () => {
       default:
         break;
     }
-  };
+  }, [currentReport, dateRange, additionalFilters, dispatch]);
 
   // Generar el reporte cuando cambia el tipo o las fechas
   useEffect(() => {
     if (currentReport) {
       generateReport();
     }
-  }, [currentReport, dateRange, additionalFilters.groupBy]);
+  }, [currentReport, dateRange, additionalFilters.groupBy, generateReport]);
 
   // Manejar la selección del tipo de reporte
-  const handleSelectReportType = (reportType) => {
+  const handleSelectReportType = useCallback((reportType) => {
     dispatch(setCurrentReport(reportType));
-  };
+  }, [dispatch]);
 
   // Manejar cambios en el rango de fechas
-  const handleDateRangeChange = (newDateRange) => {
+  const handleDateRangeChange = useCallback((newDateRange) => {
     dispatch(setDateRange(newDateRange));
-  };
+  }, [dispatch]);
 
   // Manejar cambio en formato de exportación
-  const handleFormatChange = (format) => {
+  const handleFormatChange = useCallback((format) => {
     dispatch(setExportFormat(format));
-  };
+  }, [dispatch]);
 
   // Manejar cambios en filtros adicionales
-  const handleFilterChange = (filters) => {
+  const handleFilterChange = useCallback((filters) => {
     dispatch(setAdditionalFilters(filters));
-  };
+  }, [dispatch]);
 
   // Manejar la exportación del reporte
-  const handleExport = (format) => {
-    // Aquí se implementaría la lógica de exportación según el formato
-    console.log(`Exportando reporte en formato ${format}`);
+  const handleExport = useCallback((format) => {
+    if (!reportData || loading) return;
     
-    // Ejemplo: Crear y descargar un archivo
-    // En una implementación real, esto se haría a través de una API
-    // que generaría el archivo en el formato adecuado
-    const dummyData = "Datos del reporte";
-    const blob = new Blob([dummyData], { type: "text/plain" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `reporte_${currentReport}_${new Date().toISOString().split("T")[0]}.${format}`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
+    try {
+      // Ejemplo: Crear y descargar un archivo
+      // En una implementación real, esto se haría a través de una API
+      const dummyData = JSON.stringify(reportData, null, 2);
+      const blob = new Blob([dummyData], { 
+        type: format === 'csv' ? 'text/csv' : 
+              format === 'xlsx' ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' : 
+              'application/json'
+      });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      
+      // Usar formato de fecha más simple para el nombre de archivo
+      const currentDate = new Date().toISOString().split("T")[0];
+      link.download = `reporte_${currentReport}_${currentDate}.${format}`;
+      
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url); // Liberar memoria
+    } catch (err) {
+      console.error('Error al exportar reporte:', err);
+    }
+  }, [reportData, currentReport, loading]);
   
   // Renderizar el reporte según el tipo seleccionado
-  const renderReport = () => {
+  const renderReport = useCallback(() => {
     if (loading) {
       return (
-        <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
+        <Box sx={{ 
+          display: 'flex', 
+          justifyContent: 'center', 
+          alignItems: 'center',
+          py: 8
+        }}>
           <CircularProgress />
         </Box>
       );
@@ -139,15 +166,27 @@ const ReportsPage = () => {
 
     if (error) {
       return (
-        <Alert severity="error" sx={{ my: 2 }}>
-          {error}
+        <Alert 
+          severity="error" 
+          variant="filled"
+          sx={{ my: 2 }}
+        >
+          {typeof error === 'object' ? error.message : error}
         </Alert>
       );
     }
 
     if (!reportData) {
       return (
-        <Box sx={{ textAlign: 'center', my: 4 }}>
+        <Box sx={{ 
+          textAlign: 'center', 
+          py: 8,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: 2
+        }}>
+          <ReportIcon sx={{ fontSize: 60, color: 'text.secondary', opacity: 0.5 }} />
           <Typography variant="body1" color="text.secondary">
             Seleccione un tipo de reporte y un rango de fechas para generar el informe.
           </Typography>
@@ -155,22 +194,31 @@ const ReportsPage = () => {
       );
     }
 
+    // Componentes de visualización de reportes
+    const reportProps = {
+      data: reportData,
+      loading,
+      error,
+      additionalFilters,
+      onFilterChange: handleFilterChange
+    };
+
     switch (currentReport) {
       case 'sales':
-        return <SalesReport data={reportData} loading={loading} error={error} additionalFilters={additionalFilters} onFilterChange={handleFilterChange} />;
+        return <SalesReport {...reportProps} />;
       case 'inventory':
-        return <InventoryReport data={reportData} loading={loading} error={error} additionalFilters={additionalFilters} onFilterChange={handleFilterChange} />;
+        return <InventoryReport {...reportProps} />;
       case 'customers':
-        return <CustomersReport data={reportData} loading={loading} error={error} additionalFilters={additionalFilters} onFilterChange={handleFilterChange} />;
+        return <CustomersReport {...reportProps} />;
       case 'financial':
-        return <FinancialReport data={reportData} loading={loading} error={error} additionalFilters={additionalFilters} onFilterChange={handleFilterChange} />;
+        return <FinancialReport {...reportProps} />;
       default:
         return null;
     }
-  };
+  }, [currentReport, reportData, loading, error, additionalFilters, handleFilterChange]);
 
   // Título del reporte según el tipo seleccionado
-  const getReportTitle = () => {
+  const getReportTitle = useCallback(() => {
     switch (currentReport) {
       case 'sales':
         return 'Reporte de Ventas';
@@ -183,11 +231,17 @@ const ReportsPage = () => {
       default:
         return 'Sistema de Reportes';
     }
+  }, [currentReport]);
+
+  // Convertir fechas de strings ISO a objetos Date para el selector de fechas
+  const displayDateRange = {
+    start: getDateObject(dateRange.start),
+    end: getDateObject(dateRange.end)
   };
 
   return (
-    <Box sx={{ p: 3 }}>
-      <Typography variant="h4" gutterBottom>
+    <Box sx={{ width: '100%', p: { xs: 2, sm: 3 } }}>
+      <Typography variant="h4" gutterBottom sx={{ mb: 3 }}>
         {getReportTitle()}
       </Typography>
       
@@ -197,26 +251,41 @@ const ReportsPage = () => {
       />
       
       {currentReport && (
-        <Paper sx={{ p: 2, mb: 3 }}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+        <Paper 
+          elevation={2} 
+          sx={{ 
+            p: { xs: 2, sm: 3 }, 
+            mb: 3,
+            borderRadius: 2
+          }}
+        >
+          <Box sx={{ 
+            display: 'flex', 
+            flexDirection: { xs: 'column', sm: 'row' },
+            justifyContent: 'space-between', 
+            alignItems: { xs: 'flex-start', sm: 'center' }, 
+            gap: 2,
+            mb: 2 
+          }}>
             <Typography variant="h6">
               Configuración del Reporte
             </Typography>
             
-            <Box sx={{ display: 'flex', gap: 1 }}>
-              <Button
-                startIcon={<RefreshIcon />}
-                onClick={generateReport}
-                variant="outlined"
-                size="small"
-              >
-                Actualizar
-              </Button>
-            </Box>
+            <Button
+              startIcon={<RefreshIcon />}
+              onClick={generateReport}
+              variant="outlined"
+              size="small"
+              disabled={loading}
+              sx={{ alignSelf: { xs: 'flex-end', sm: 'auto' } }}
+            >
+              Actualizar
+            </Button>
           </Box>
           
+          {/* Pasar objetos Date convertidos para la UI */}
           <DateRangeSelector 
-            dateRange={dateRange} 
+            dateRange={displayDateRange} 
             onDateRangeChange={handleDateRangeChange} 
           />
           
@@ -234,7 +303,17 @@ const ReportsPage = () => {
       )}
       
       {currentReport && (
-        <Paper sx={{ p: 2 }} className="report-container">
+        <Paper 
+          elevation={2} 
+          sx={{ 
+            p: { xs: 2, sm: 3 },
+            borderRadius: 2,
+            boxShadow: theme => theme.palette.mode === 'dark' 
+              ? '0 4px 20px 0 rgba(0,0,0, 0.4)' 
+              : '0 4px 20px 0 rgba(0,0,0, 0.04)'
+          }} 
+          className="report-container"
+        >
           {renderReport()}
         </Paper>
       )}

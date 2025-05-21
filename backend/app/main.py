@@ -9,7 +9,7 @@ from app.middleware.logging import logging_middleware
 from app.middleware.rate_limiter import rate_limiting_middleware
 from app.config import settings
 from app.scheduled_tasks import start_scheduler
-
+from app.api.routes import users
 
 # Actualiza la definición de app en main.py
 app = FastAPI(
@@ -33,7 +33,7 @@ app = FastAPI(
 # Configurar CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.CORS_ORIGINS,
+    allow_origins=["http://localhost:3000"],  # Ajusta según tu entorno
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -54,6 +54,8 @@ app.add_middleware(RateLimitingMiddleware)
 # Incluir todos los routers bajo el prefijo /api
 app.include_router(api_router, prefix="/api")
 
+
+# ÚNICO evento de startup (eliminado el duplicado)
 @app.on_event("startup")
 async def startup_event():
     """
@@ -68,14 +70,6 @@ async def startup_event():
 @app.get("/")
 async def root():
     return {"message": "POS & Inventory API"}
-
-@app.on_event("startup")
-async def startup_event():
-    """
-    Inicializa componentes al iniciar la aplicación.
-    """
-    init_db()
-
 
 @app.post("/api/seed-database", tags=["administration"])
 async def seed_db(request: Request):

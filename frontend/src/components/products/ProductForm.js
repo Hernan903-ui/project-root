@@ -102,17 +102,18 @@ const ProductForm = ({ initialData, onSubmit, isSubmitting, title }) => {
     }
   }, [initialData, reset]);
 
-  const { data: categories, isLoading: isLoadingCategories } = useQuery(
-    'categories',
-    getCategories,
-    {
-      staleTime: 300000, // 5 minutos
-    }
-  );
+  // Actualizado para React Query v5
+  const { data: categories, isLoading: isLoadingCategories } = useQuery({
+    queryKey: ['categories'],
+    queryFn: getCategories,
+    staleTime: 300000, // 5 minutos
+  });
 
-  const createCategoryMutation = useMutation(createCategory, {
+  // Actualizado para React Query v5
+  const createCategoryMutation = useMutation({
+    mutationFn: createCategory,
     onSuccess: (data) => {
-      queryClient.invalidateQueries('categories');
+      queryClient.invalidateQueries({ queryKey: ['categories'] });
       enqueueSnackbar('Categoría creada con éxito', { variant: 'success' });
       setOpenCategoryDialog(false);
       setNewCategory({ name: '', description: '' });
@@ -143,13 +144,15 @@ const ProductForm = ({ initialData, onSubmit, isSubmitting, title }) => {
       <Box component="form" onSubmit={handleSubmit(onSubmit)} noValidate>
         <Grid container spacing={3}>
           {/* Información básica */}
-          <Grid item xs={12}>
+          {/* Actualizado a Grid v2 */}
+          <Grid gridColumn={{ xs: "span 12" }}>
             <Typography variant="h6" gutterBottom>
               Información Básica
             </Typography>
           </Grid>
 
-          <Grid item xs={12} md={6}>
+          {/* Actualizado a Grid v2 */}
+          <Grid gridColumn={{ xs: "span 12", md: "span 6" }}>
             <Controller
               name="name"
               control={control}
@@ -166,7 +169,8 @@ const ProductForm = ({ initialData, onSubmit, isSubmitting, title }) => {
             />
           </Grid>
 
-          <Grid item xs={12} md={6}>
+          {/* Actualizado a Grid v2 */}
+          <Grid gridColumn={{ xs: "span 12", md: "span 6" }}>
             <Controller
               name="category_id"
               control={control}
@@ -209,7 +213,8 @@ const ProductForm = ({ initialData, onSubmit, isSubmitting, title }) => {
             />
           </Grid>
 
-          <Grid item xs={12} md={6}>
+          {/* Actualizado a Grid v2 */}
+          <Grid gridColumn={{ xs: "span 12", md: "span 6" }}>
             <Controller
               name="sku"
               control={control}
@@ -226,7 +231,8 @@ const ProductForm = ({ initialData, onSubmit, isSubmitting, title }) => {
             />
           </Grid>
 
-          <Grid item xs={12} md={6}>
+          {/* Actualizado a Grid v2 */}
+          <Grid gridColumn={{ xs: "span 12", md: "span 6" }}>
             <Controller
               name="barcode"
               control={control}
@@ -242,7 +248,8 @@ const ProductForm = ({ initialData, onSubmit, isSubmitting, title }) => {
             />
           </Grid>
 
-          <Grid item xs={12}>
+          {/* Actualizado a Grid v2 */}
+          <Grid gridColumn={{ xs: "span 12" }}>
             <Controller
               name="description"
               control={control}
@@ -261,13 +268,15 @@ const ProductForm = ({ initialData, onSubmit, isSubmitting, title }) => {
           </Grid>
 
           {/* Precios e Impuestos */}
-          <Grid item xs={12}>
+          {/* Actualizado a Grid v2 */}
+          <Grid gridColumn={{ xs: "span 12" }}>
             <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>
               Precios e Impuestos
             </Typography>
           </Grid>
 
-          <Grid item xs={12} md={4}>
+          {/* Actualizado a Grid v2 */}
+          <Grid gridColumn={{ xs: "span 12", md: "span 4" }}>
             <Controller
               name="price"
               control={control}
@@ -288,7 +297,8 @@ const ProductForm = ({ initialData, onSubmit, isSubmitting, title }) => {
             />
           </Grid>
 
-          <Grid item xs={12} md={4}>
+          {/* Actualizado a Grid v2 */}
+          <Grid gridColumn={{ xs: "span 12", md: "span 4" }}>
             <Controller
               name="cost_price"
               control={control}
@@ -309,7 +319,8 @@ const ProductForm = ({ initialData, onSubmit, isSubmitting, title }) => {
             />
           </Grid>
 
-          <Grid item xs={12} md={4}>
+          {/* Actualizado a Grid v2 */}
+          <Grid gridColumn={{ xs: "span 12", md: "span 4" }}>
             <Controller
               name="tax_rate"
               control={control}
@@ -330,13 +341,15 @@ const ProductForm = ({ initialData, onSubmit, isSubmitting, title }) => {
           </Grid>
 
           {/* Inventario */}
-          <Grid item xs={12}>
+          {/* Actualizado a Grid v2 */}
+          <Grid gridColumn={{ xs: "span 12" }}>
             <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>
               Inventario
             </Typography>
           </Grid>
 
-          <Grid item xs={12} md={4}>
+          {/* Actualizado a Grid v2 */}
+          <Grid gridColumn={{ xs: "span 12", md: "span 4" }}>
             <Controller
               name="stock_quantity"
               control={control}
@@ -354,7 +367,8 @@ const ProductForm = ({ initialData, onSubmit, isSubmitting, title }) => {
             />
           </Grid>
 
-          <Grid item xs={12} md={4}>
+          {/* Actualizado a Grid v2 */}
+          <Grid gridColumn={{ xs: "span 12", md: "span 4" }}>
             <Controller
               name="min_stock_level"
               control={control}
@@ -372,7 +386,8 @@ const ProductForm = ({ initialData, onSubmit, isSubmitting, title }) => {
             />
           </Grid>
 
-          <Grid item xs={12} md={4}>
+          {/* Actualizado a Grid v2 */}
+          <Grid gridColumn={{ xs: "span 12", md: "span 4" }}>
             <Controller
               name="is_active"
               control={control}
@@ -393,7 +408,8 @@ const ProductForm = ({ initialData, onSubmit, isSubmitting, title }) => {
           </Grid>
 
           {/* Botones de acción */}
-          <Grid item xs={12} sx={{ mt: 3 }}>
+          {/* Actualizado a Grid v2 */}
+          <Grid gridColumn={{ xs: "span 12" }} sx={{ mt: 3 }}>
             <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
               <Button
                 variant="outlined"
@@ -442,7 +458,7 @@ const ProductForm = ({ initialData, onSubmit, isSubmitting, title }) => {
         <DialogActions>
           <Button onClick={() => setOpenCategoryDialog(false)}>Cancelar</Button>
           <Button onClick={handleCreateCategory} variant="contained">
-            {createCategoryMutation.isLoading ? 'Creando...' : 'Crear'}
+            {createCategoryMutation.isPending ? 'Creando...' : 'Crear'}
           </Button>
         </DialogActions>
       </Dialog>
