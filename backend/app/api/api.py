@@ -11,20 +11,23 @@ from app.api.routes import (
     reports,
     sales,
     uploads,
-    # Importa el nuevo router de usuarios
-    users # <--- ¡Importar aquí!
+    purchase_orders,
+    suppliers,
+    users
 )
 
 api_router = APIRouter()
 
-api_router.include_router(auth.router, tags=["auth"])
-api_router.include_router(backups.router, tags=["backups"])
-api_router.include_router(categories.router, tags=["categories"])
-api_router.include_router(customers.router, tags=["customers"])
-api_router.include_router(inventory.router, tags=["inventory"])
-api_router.include_router(products.router, tags=["products"])
-api_router.include_router(reports.router, tags=["reports"])
-api_router.include_router(sales.router, tags=["sales"])
-api_router.include_router(uploads.router, tags=["uploads"])
-# Incluye el nuevo router de usuarios
-api_router.include_router(users.router, tags=["users"]) # <--- ¡Incluir aquí!
+# Incluir todos los routers con sus prefijos correspondientes
+api_router.include_router(auth.router, prefix="/auth", tags=["auth"])
+api_router.include_router(backups.router, prefix="/backups", tags=["backups"])
+api_router.include_router(categories.router, prefix="/categories", tags=["categories"])
+api_router.include_router(customers.router, prefix="/customers", tags=["customers"])
+api_router.include_router(inventory.router, prefix="/inventory", tags=["inventory"])
+api_router.include_router(products.router, prefix="/products", tags=["products"])
+api_router.include_router(reports.router, prefix="/reports", tags=["reports"])
+api_router.include_router(sales.router, prefix="/sales", tags=["sales"])
+api_router.include_router(uploads.router, prefix="/uploads", tags=["uploads"])
+api_router.include_router(users.router, prefix="/users", tags=["users"])
+api_router.include_router(suppliers.router, prefix="/suppliers", tags=["suppliers"])
+api_router.include_router(purchase_orders.router, prefix="/purchase-orders", tags=["purchase-orders"])

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link as RouterLink } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
@@ -12,7 +12,9 @@ import {
   Typography, 
   Paper,
   Alert,
-  CircularProgress
+  CircularProgress,
+  Link,
+  Divider
 } from '@mui/material';
 import { login, clearError } from '../features/auth/authSlice';
 
@@ -75,7 +77,7 @@ const LoginPage = () => {
             width: '100%',
           }}
         >
-          <Typography component="h1" variant="h5">
+          <Typography component="h1" variant="h5" gutterBottom>
             Iniciar Sesión
           </Typography>
           
@@ -119,6 +121,22 @@ const LoginPage = () => {
             >
               {isLoading ? <CircularProgress size={24} /> : 'Iniciar Sesión'}
             </Button>
+            
+            {/* Sección añadida para registro */}
+            <Divider sx={{ my: 2 }}>
+              <Typography variant="body2" color="text.secondary">
+                ¿Nuevo usuario?
+              </Typography>
+            </Divider>
+            
+            <Box sx={{ textAlign: 'center', mt: 1 }}>
+              <Typography variant="body2">
+                ¿No tienes una cuenta?{' '}
+                <Link component={RouterLink} to="/register" variant="body2" underline="hover">
+                  Regístrate aquí
+                </Link>
+              </Typography>
+            </Box>
           </Box>
         </Paper>
       </Box>

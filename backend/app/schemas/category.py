@@ -4,7 +4,7 @@ from datetime import datetime
 
 class CategoryBase(BaseModel):
     name: Annotated[str, constr(min_length=1, max_length=50)]
-    description: Annotated[Optional[str], constr(max_length=255)] = None # Default still here
+    description: Annotated[Optional[str], constr(max_length=255)] = None
 
 class CategoryCreate(CategoryBase):
     pass
@@ -14,7 +14,7 @@ class CategoryUpdate(BaseModel):
     description: Annotated[Optional[str], constr(max_length=255)] = None
 
 class CategoryInDBBase(CategoryBase):
-    id: Annotated[int, Field(gt=0)] # Field still used for gt, ge etc.
+    id: Annotated[int, Field(gt=0)] # ID must be positive
     created_at: datetime
     updated_at: Optional[datetime] = None
 

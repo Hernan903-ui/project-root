@@ -30,22 +30,16 @@ import { DataGrid } from '@mui/x-data-grid';
 // Importación de inventorySlice (esta sí existe)
 import { fetchInventory, updateInventoryItem } from '../features/inventory/inventorySlice';
 import { fetchProducts } from '../features/products/productSlice';
-import InventoryItemForm from '../components/inventory/InventoryItemForm';
-import InventoryFilters from '../components/inventory/InventoryFilters';
-import InventoryStats from '../components/inventory/InventoryStats';
-import StockMovementHistory from '../components/inventory/StockMovementHistory';
 import { generatePDF } from '../utils/reportGenerator'; // Esta ya la creamos
 
-// ... (resto del código de InventoryPage.js)
 const InventoryPage = () => {
   const dispatch = useDispatch();
-  // const { items, loading, error } = useSelector((state) => state.inventory); // mantén esta
-  const { items, loading, error } = useSelector((state) => state.inventory);
-  // const { products } = useSelector((state) => state.products); // Eliminada
-  const products = []; // Placeholder vacío si no hay slice de productos
+  // Obtener el estado del inventario del Redux store, con valor por defecto para items
+  const { items = [], loading, error } = useSelector((state) => state.inventory || { items: [] });
+  // Placeholder vacío si no hay slice de productos
+  const products = [];
 
   const [tabValue, setTabValue] = useState(0);
-  // const [openAddForm, setOpenAddForm] = useState(false); // mantén esta
   const [openAddForm, setOpenAddForm] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -56,7 +50,6 @@ const InventoryPage = () => {
     status: ''
   });
   const [selectedItem, setSelectedItem] = useState(null);
-  // const [showHistory, setShowHistory] = useState(false); // mantén esta
   const [showHistory, setShowHistory] = useState(false);
   const [stockAdjustmentOpen, setStockAdjustmentOpen] = useState(false);
   const [adjustmentQuantity, setAdjustmentQuantity] = useState(0);
@@ -131,12 +124,13 @@ const InventoryPage = () => {
     setShowHistory(true);
   };
 
+  // CORRECCIÓN: Asegurarse de que items sea un array antes de usar filter
   // Filtrar items basado en búsqueda y filtros
-  const filteredItems = items.filter(item => {
+  const filteredItems = Array.isArray(items) ? items.filter(item => {
     const matchesSearch =
-      item.productName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.sku?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (item.location && item.location.toLowerCase().includes(searchQuery.toLowerCase()));
+      (item.productName?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
+      (item.sku?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
+      ((item.location || '').toLowerCase().includes(searchQuery.toLowerCase()));
 
     const matchesFilters =
       (!filters.category || item.category === filters.category) &&
@@ -145,14 +139,15 @@ const InventoryPage = () => {
       (!filters.status || item.status === filters.status);
 
     return matchesSearch && matchesFilters;
-  });
+  }) : [];
 
+  // CORRECCIÓN: Asegurarse de que items sea un array antes de calcular estadísticas
   // Obtener estadísticas de inventario (ajustado si no hay slice de productos)
   const inventoryStats = {
-    totalItems: items.length,
-    totalQuantity: items.reduce((sum, item) => sum + (item.quantity || 0), 0),
-    lowStock: items.filter(item => item.quantity <= (item.minStockLevel || 0)).length,
-    outOfStock: items.filter(item => (item.quantity || 0) === 0).length
+    totalItems: Array.isArray(items) ? items.length : 0,
+    totalQuantity: Array.isArray(items) ? items.reduce((sum, item) => sum + (item.quantity || 0), 0) : 0,
+    lowStock: Array.isArray(items) ? items.filter(item => item.quantity <= (item.minStockLevel || 0)).length : 0,
+    outOfStock: Array.isArray(items) ? items.filter(item => (item.quantity || 0) === 0).length : 0
   };
 
   const columns = [
@@ -173,7 +168,7 @@ const InventoryPage = () => {
         if (params.value === 'Bajo Stock') color = 'warning';
         if (params.value === 'Agotado') color = 'error';
 
-        return <Chip label={params.value} color={color} size="small" />;
+        return <Chip label={params.value || 'No definido'} color={color} size="small" />;
       }
     },
     {
@@ -221,15 +216,19 @@ const InventoryPage = () => {
     }
   ];
 
+  // CORRECCIÓN: Asegurarse de que items sea un array antes de usar filter
+  const lowStockItems = Array.isArray(items) 
+    ? items.filter(item => item.quantity <= (item.minStockLevel || 0))
+    : [];
+
   return (
     <Box sx={{ p: 3 }}>
       <Typography variant="h4" gutterBottom>
         Gestión de Inventario
       </Typography>
 
-<Paper sx={{ p: 2, mb: 3 }}>
+      <Paper sx={{ p: 2, mb: 3 }}>
         <Tabs value={tabValue} onChange={handleTabChange} sx={{ mb: 2}}>
-
           <Tab label="Inventario" />
           <Tab label="Estadísticas" />
         </Tabs>
@@ -256,16 +255,6 @@ const InventoryPage = () => {
                 </Button>
               </Box>
               <Box sx={{ display: 'flex', gap: 1 }}>
-                 {/* Botón "Añadir Item" eliminado si InventoryItemForm no existe */}
-                {/* <Button
-                  startIcon={<AddIcon />}
-                  variant="contained"
-                  color="primary"
-                  onClick={handleOpenAddForm}
-                  size="small"
-                >
-                  Añadir Item
-                </Button> */}
                 <Button
                   startIcon={<PrintIcon />}
                   variant="outlined"
@@ -277,29 +266,20 @@ const InventoryPage = () => {
               </Box>
             </Box>
 
-            {/* InventoryFilters componente eliminado si no existe */}
-            {/* {showFilters && (
-              <InventoryFilters
-                filters={filters}
-                onFilterChange={handleFilterChange}
-                categories={[...new Set(items.map(item => item.category))]}
-              />
-            )} */}
-             {showFilters && (
+            {showFilters && (
               <Box sx={{ mb: 2, p: 2, border: '1px dashed grey', borderRadius: 1 }}>
-                 <Typography variant="body2" color="textSecondary">
-                   Filtros de inventario (componente InventoryFilters no encontrado)
-                 </Typography>
-                 {/* Aquí podrías poner inputs básicos si deseas alguna funcionalidad de filtrado simple */}
-               </Box>
+                <Typography variant="body2" color="textSecondary">
+                  Filtros de inventario (componente InventoryFilters no encontrado)
+                </Typography>
+                {/* Aquí podrías poner inputs básicos si deseas alguna funcionalidad de filtrado simple */}
+              </Box>
             )}
 
-
-            {items.filter(item => item.quantity <= (item.minStockLevel || 0)).length > 0 && (
+            {lowStockItems.length > 0 && (
               <Box sx={{ mb: 2, p: 1, bgcolor: 'warning.light', borderRadius: 1, display: 'flex', alignItems: 'center' }}>
                 <WarningIcon color="warning" sx={{ mr: 1 }} />
                 <Typography>
-                  {items.filter(item => item.quantity <= (item.minStockLevel || 0)).length} productos con bajo stock o agotados
+                  {lowStockItems.length} productos con bajo stock o agotados
                 </Typography>
               </Box>
             )}
@@ -318,121 +298,92 @@ const InventoryPage = () => {
                 rowsPerPageOptions={[10, 25, 50]}
                 autoHeight
                 disableSelectionOnClick
-                // onRowClick={handleRowClick} // Deshabilitado si no hay formulario de edición/visualización
-                getRowId={(row) => row.id || row._id}
+                getRowId={(row) => row.id || row._id || Math.random().toString(36).substring(2, 11)} // Fallback seguro
                 sx={{ minHeight: 400 }}
               />
             )}
           </>
         )}
 
-        {/* InventoryStats componente eliminado si no existe */}
         {tabValue === 1 && (
-           <Box sx={{ p: 2, border: '1px dashed grey', borderRadius: 1 }}>
-              <Typography variant="body2" color="textSecondary">
-                Estadísticas de inventario (componente InventoryStats no encontrado)
-              </Typography>
-              <Typography variant="h6">Resumen Rápido:</Typography>
-               <ul>
-                 <li>Total Items: {inventoryStats.totalItems}</li>
-                 <li>Cantidad Total: {inventoryStats.totalQuantity}</li>
-                 <li>Bajo Stock: {inventoryStats.lowStock}</li>
-                 <li>Agotado: {inventoryStats.outOfStock}</li>
-               </ul>
-            </Box>
+          <Box sx={{ p: 2, border: '1px dashed grey', borderRadius: 1 }}>
+            <Typography variant="body2" color="textSecondary">
+              Estadísticas de inventario (componente InventoryStats no encontrado)
+            </Typography>
+            <Typography variant="h6">Resumen Rápido:</Typography>
+            <ul>
+              <li>Total Items: {inventoryStats.totalItems}</li>
+              <li>Cantidad Total: {inventoryStats.totalQuantity}</li>
+              <li>Bajo Stock: {inventoryStats.lowStock}</li>
+              <li>Agotado: {inventoryStats.outOfStock}</li>
+            </ul>
+          </Box>
         )}
       </Paper>
 
-      {/* Modal para añadir/editar items de inventario (eliminado si InventoryItemForm no existe) */}
-      {/* <Dialog open={openAddForm} onClose={handleCloseAddForm} maxWidth="md" fullWidth>
-        <DialogTitle>
-          {selectedItem ? 'Editar Item de Inventario' : 'Añadir Nuevo Item de Inventario'}
-        </DialogTitle>
+      {/* Modal para ajuste de stock */}
+      <Dialog open={stockAdjustmentOpen} onClose={() => setStockAdjustmentOpen(false)}>
+        <DialogTitle>Ajuste de Stock</DialogTitle>
         <DialogContent>
-          <InventoryItemForm
-            item={selectedItem}
-            products={products}
-            onClose={handleCloseAddForm}
-          />
+          <Box sx={{ pt: 1 }}>
+            <Typography variant="subtitle1">
+              Producto: {selectedItem?.productName || 'No seleccionado'}
+            </Typography>
+            <Typography variant="body2" sx={{ mb: 2 }}>
+              Stock actual: {selectedItem?.quantity || 0} unidades
+            </Typography>
+
+            <TextField
+              label="Cantidad a ajustar"
+              type="number"
+              fullWidth
+              margin="normal"
+              value={adjustmentQuantity}
+              onChange={(e) => setAdjustmentQuantity(e.target.value)}
+              helperText="Use números negativos para disminuir el stock"
+            />
+
+            <TextField
+              label="Motivo del ajuste"
+              fullWidth
+              margin="normal"
+              value={adjustmentReason}
+              onChange={(e) => setAdjustmentReason(e.target.value)}
+              multiline
+              rows={2}
+            />
+          </Box>
         </DialogContent>
-      </Dialog> */}
+        <DialogActions>
+          <Button onClick={() => setStockAdjustmentOpen(false)}>Cancelar</Button>
+          <Button
+            onClick={handleApplyStockAdjustment}
+            variant="contained"
+            color="primary"
+            disabled={!adjustmentReason}
+          >
+            Aplicar Ajuste
+          </Button>
+        </DialogActions>
+      </Dialog>
 
-      {/* Modal para ajuste de stock (se mantiene si la lógica está aquí y no en un componente separado) */}
-       <Dialog open={stockAdjustmentOpen} onClose={() => setStockAdjustmentOpen(false)}>
-         <DialogTitle>Ajuste de Stock</DialogTitle>
-         <DialogContent>
-           <Box sx={{ pt: 1 }}>
-             <Typography variant="subtitle1">
-               Producto: {selectedItem?.productName}
-             </Typography>
-             <Typography variant="body2" sx={{ mb: 2 }}>
-               Stock actual: {selectedItem?.quantity} unidades
-             </Typography>
-
-             <TextField
-               label="Cantidad a ajustar"
-               type="number"
-               fullWidth
-               margin="normal"
-               value={adjustmentQuantity}
-               onChange={(e) => setAdjustmentQuantity(e.target.value)}
-               helperText="Use números negativos para disminuir el stock"
-             />
-
-             <TextField
-               label="Motivo del ajuste"
-               fullWidth
-               margin="normal"
-               value={adjustmentReason}
-               onChange={(e) => setAdjustmentReason(e.target.value)}
-               multiline
-               rows={2}
-             />
-           </Box>
-         </DialogContent>
-         <DialogActions>
-           <Button onClick={() => setStockAdjustmentOpen(false)}>Cancelar</Button>
-           <Button
-             onClick={handleApplyStockAdjustment}
-             variant="contained"
-             color="primary"
-             disabled={!adjustmentReason}
-           >
-             Aplicar Ajuste
-           </Button>
-         </DialogActions>
-       </Dialog>
-
-
-      {/* Modal para historial de movimientos (eliminado si StockMovementHistory no existe) */}
-      {/* <Dialog open={showHistory} onClose={() => setShowHistory(false)} maxWidth="md" fullWidth>
+      {/* Modal para historial de movimientos */}
+      <Dialog open={showHistory} onClose={() => setShowHistory(false)} maxWidth="md" fullWidth>
         <DialogTitle>Historial de Movimientos</DialogTitle>
         <DialogContent>
-          {selectedItem && (
-            <StockMovementHistory itemId={selectedItem.id || selectedItem._id} />
-          )}
+          <Box sx={{ p: 2, border: '1px dashed grey', borderRadius: 1 }}>
+            <Typography variant="body2" color="textSecondary">
+              Historial de movimientos (componente StockMovementHistory no encontrado)
+            </Typography>
+            {/* Aquí podrías mostrar la información de historial si está disponible en los datos del item */}
+            <Typography variant="subtitle1">Item seleccionado:</Typography>
+            <pre>{JSON.stringify(selectedItem, null, 2)}</pre>
+          </Box>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setShowHistory(false)}>Cerrar</Button>
         </DialogActions>
-      </Dialog> */}
-       <Dialog open={showHistory} onClose={() => setShowHistory(false)} maxWidth="md" fullWidth>
-         <DialogTitle>Historial de Movimientos</DialogTitle>
-         <DialogContent>
-           <Box sx={{ p: 2, border: '1px dashed grey', borderRadius: 1 }}>
-               <Typography variant="body2" color="textSecondary">
-                 Historial de movimientos (componente StockMovementHistory no encontrado)
-               </Typography>
-                {/* Aquí podrías mostrar la información de historial si está disponible en los datos del item */}
-                <Typography variant="subtitle1">Item seleccionado:</Typography>
-                <pre>{JSON.stringify(selectedItem, null, 2)}</pre>
-             </Box>
-         </DialogContent>
-         <DialogActions>
-           <Button onClick={() => setShowHistory(false)}>Cerrar</Button>
-         </DialogActions>
-       </Dialog>
-
+      </Dialog>
     </Box>
   );
 };

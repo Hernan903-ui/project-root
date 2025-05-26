@@ -31,21 +31,20 @@ const ProductTable = ({ products, isLoading, totalCount, page, limit, onPageChan
   const queryClient = useQueryClient();
   const [selected, setSelected] = useState([]);
 
-  const toggleStatus = useMutation(
-    ({ id, is_active }) => updateProduct(id, { is_active }),
-    {
-      onSuccess: () => {
-        queryClient.invalidateQueries('products');
-        enqueueSnackbar('Estado del producto actualizado correctamente', { variant: 'success' });
-      },
-      onError: (error) => {
-        enqueueSnackbar(
-          `Error al actualizar el estado: ${error.response?.data?.detail || error.message}`,
-          { variant: 'error' }
-        );
-      },
+  // Corregido: Actualizada la sintaxis de useMutation para React Query v4/v5
+  const toggleStatus = useMutation({
+    mutationFn: ({ id, is_active }) => updateProduct(id, { is_active }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+      enqueueSnackbar('Estado del producto actualizado correctamente', { variant: 'success' });
+    },
+    onError: (error) => {
+      enqueueSnackbar(
+        `Error al actualizar el estado: ${error.response?.data?.detail || error.message}`,
+        { variant: 'error' }
+      );
     }
-  );
+  });
 
   const handleToggleActive = (id, currentStatus) => {
     toggleStatus.mutate({ id, is_active: !currentStatus });
@@ -91,10 +90,13 @@ const ProductTable = ({ products, isLoading, totalCount, page, limit, onPageChan
   };
 
   const getStockStatus = (product) => {
+    if (!product.stock_quantity && product.stock_quantity !== 0) {
+      return { label: 'No disponible', color: 'default' };
+    }
     if (product.stock_quantity <= 0) {
       return { label: 'Sin Stock', color: 'error' };
     }
-    if (product.stock_quantity <= product.min_stock_level) {
+    if (product.stock_quantity <= (product.min_stock_level || 5)) {
       return { label: 'Bajo', color: 'warning' };
     }
     return { label: 'Disponible', color: 'success' };
@@ -191,19 +193,19 @@ const ProductTable = ({ products, isLoading, totalCount, page, limit, onPageChan
                       <Typography variant="caption" color="textSecondary">
                         {product.description && product.description.length > 50
                           ? `${product.description.substring(0, 50)}...`
-                          : product.description}
+                          : product.description || '-'}
                       </Typography>
                     </TableCell>
-                    <TableCell>{product.sku}</TableCell>
+                    <TableCell>{product.sku || '-'}</TableCell>
                     <TableCell>
                       {product.category ? product.category.name : '-'}
                     </TableCell>
                     <TableCell align="right">
-                      ${product.price.toFixed(2)}
+                      ${typeof product.price === 'number' ? product.price.toFixed(2) : '0.00'}
                     </TableCell>
                     <TableCell align="center">
                       <Chip 
-                        label={`${product.stock_quantity} unid.`} 
+                        label={`${product.stock_quantity || 0} unid.`} 
                         color={stockStatus.color} 
                         size="small" 
                         variant="outlined"

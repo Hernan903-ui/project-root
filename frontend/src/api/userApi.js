@@ -2,39 +2,65 @@ import axiosInstance from './axios';
 
 // Función auxiliar para extraer mensajes de error de manera consistente
 const extractErrorMessage = (error) => {
+  console.group('🔍 Análisis detallado del error:');
+  
   // Si el error tiene una respuesta de la API
   if (error.response) {
+    console.log('📊 Respuesta del servidor:', {
+      status: error.response.status,
+      statusText: error.response.statusText,
+      data: error.response.data
+    });
+    
     // Manejar error 422 (Unprocessable Content) específicamente
     if (error.response.status === 422) {
       // Fastapi suele devolver errores de validación en este formato
       if (error.response.data?.detail) {
         if (Array.isArray(error.response.data.detail)) {
           // Si es un array de errores, tomar el primero
-          return error.response.data.detail[0]?.msg || 'Error de validación';
+          const msg = error.response.data.detail[0]?.msg || 'Error de validación';
+          console.log('⚠️ Error de validación:', msg);
+          console.groupEnd();
+          return msg;
         }
+        console.log('⚠️ Error de validación:', error.response.data.detail);
+        console.groupEnd();
         return error.response.data.detail;
       }
     }
     
     // Manejar error 401 (No autorizado)
     if (error.response.status === 401) {
-      // Podríamos redireccionar a login o manejar de otra forma
+      console.log('🔒 Error de autenticación: sesión expirada');
+      console.groupEnd();
       return 'Su sesión ha expirado. Por favor inicie sesión nuevamente.';
     }
     
     // Verificar diferentes posibles ubicaciones del mensaje de error
-    return error.response.data?.message || 
+    const errorMsg = error.response.data?.message || 
            error.response.data?.detail || 
            error.response.data?.error || 
            `Error ${error.response.status}: ${error.response.statusText}`;
+    
+    console.log('❌ Mensaje de error extraído:', errorMsg);
+    console.groupEnd();
+    return errorMsg;
   }
   
   // Si es un error de timeout u otro error de red
   if (error.request) {
-    return 'No se pudo conectar con el servidor. Verifique su conexión.';
+    console.log('🌐 Error de red - no se recibió respuesta:', {
+      url: error.config?.url,
+      method: error.config?.method,
+      timeout: error.config?.timeout
+    });
+    console.groupEnd();
+    return 'No se pudo conectar con el servidor. Verifique su conexión e intente de nuevo.';
   }
   
   // Para otros tipos de errores
+  console.log('⚠️ Error general:', error.message);
+  console.groupEnd();
   return error.message || 'Ha ocurrido un error desconocido';
 };
 
@@ -56,6 +82,112 @@ const getFallbackProfile = () => {
       language: 'es'
     }
   };
+};
+
+/**
+ * Registra un nuevo usuario desde la página pública de registro
+ * @param {Object} userData - Datos del usuario {email, password, full_name, username}
+ * @returns {Promise} Información del usuario registrado
+ */
+export const register = async (userData) => {
+  console.group('🔐 Iniciando registro de usuario');
+  console.log('📤 Datos recibidos:', { ...userData, password: '***OCULTO***' });
+  
+  try {
+    // Verificar y adaptar los datos para asegurar que tengan el formato correcto
+    const adaptedUserData = { ...userData };
+    
+    // Si no se proporciona un nombre de usuario, generarlo a partir del email
+    if (!adaptedUserData.username && adaptedUserData.email) {
+      adaptedUserData.username = adaptedUserData.email.split('@')[0];
+      console.log('🤖 Generando nombre de usuario automáticamente:', adaptedUserData.username);
+    }
+    
+    // Verificar que todos los campos requeridos estén presentes
+    const requiredFields = ['email', 'password', 'full_name', 'username'];
+    const missingFields = requiredFields.filter(field => !adaptedUserData[field]);
+    
+    if (missingFields.length > 0) {
+      const errorMsg = `Faltan campos obligatorios: ${missingFields.join(', ')}`;
+      console.error('❌ ' + errorMsg);
+      console.groupEnd();
+      throw errorMsg;
+    }
+    
+    console.log('📤 Datos adaptados:', { 
+      ...adaptedUserData, 
+      password: '***OCULTO***' 
+    });
+    
+    // Asignar un timeout largo para desarrollo
+    const config = {
+      timeout: 15000 // 15 segundos para dar tiempo en desarrollo
+    };
+    
+    console.log('🔄 Enviando solicitud a /auth/register...');
+    const response = await axiosInstance.post('/auth/register', adaptedUserData, config);
+    
+    console.log('✅ Registro exitoso:', response.data);
+    console.groupEnd();
+    return response.data;
+  } catch (error) {
+    console.error("❌ Error en registro de usuario:", error);
+    
+    // Intentar reconexión en caso de error de red
+    if (!error.response) {
+      console.log('🔄 Intentando verificar estado del servidor...');
+      try {
+        // Verificar si el servidor está disponible con un endpoint simple
+        await axiosInstance.get('/health', { timeout: 5000 });
+        console.log('🌐 Servidor disponible, pero hubo un problema con el registro');
+      } catch (healthCheckError) {
+        console.error('🌐 Servidor no disponible:', healthCheckError.message);
+      }
+    }
+    
+    // Manejo específico para error de usuario ya existente
+    if (error.response?.status === 409) {
+      const errorMsg = 'Ya existe un usuario con este correo electrónico o nombre de usuario';
+      console.error('⚠️ ' + errorMsg);
+      console.groupEnd();
+      throw errorMsg;
+    }
+    
+    // Errores de validación en los datos de registro
+    if (error.response?.status === 422) {
+      const details = error.response.data?.detail;
+      if (Array.isArray(details) && details.length > 0) {
+        // Mapea los errores de validación para mostrarlos de manera amigable
+        const fieldErrors = details.map(err => {
+          const field = err.loc[err.loc.length - 1];
+          // Traducir nombres de campos comunes para mejor UX
+          const fieldMap = {
+            'email': 'Correo electrónico',
+            'password': 'Contraseña',
+            'full_name': 'Nombre completo',
+            'username': 'Nombre de usuario'
+          };
+          const fieldName = fieldMap[field] || field;
+          return `${fieldName}: ${err.msg}`;
+        }).join(', ');
+        
+        const errorMsg = `Por favor corrija los siguientes errores: ${fieldErrors}`;
+        console.error('⚠️ ' + errorMsg);
+        console.groupEnd();
+        throw errorMsg;
+      }
+    }
+    
+    // Si el error ya es un string (como los que lanzamos nosotros mismos)
+    if (typeof error === 'string') {
+      console.groupEnd();
+      throw error;
+    }
+    
+    const errorMsg = extractErrorMessage(error);
+    console.groupEnd();
+    throw errorMsg;
+  }
 };
 
 // ========== API DE PERFIL DE USUARIO (EXISTENTE) ==========
@@ -267,8 +399,73 @@ export const assignUserRole = async (userId, roleId) => {
   }
 };
 
+// NUEVO: Verificar si el servidor está activo (para diagnóstico)
+export const checkServerStatus = async () => {
+  try {
+    const response = await axiosInstance.get('/health', { timeout: 5000 });
+    return {
+      online: true,
+      details: response.data
+    };
+  } catch (error) {
+    console.error("Error verificando estado del servidor:", error);
+    return {
+      online: false,
+      error: extractErrorMessage(error)
+    };
+  }
+};
+
+// NUEVO: Diagnóstico de registro
+export const diagnoseRegistration = async (email) => {
+  try {
+    // Verificar si el servidor está disponible
+    const serverStatus = await checkServerStatus();
+    if (!serverStatus.online) {
+      return {
+        status: 'offline',
+        message: 'El servidor no está disponible en este momento'
+      };
+    }
+    
+    // Verificar si el email ya está registrado
+    const checkData = { email };
+    try {
+      const response = await axiosInstance.post('/auth/check-email', checkData);
+      return {
+        status: 'available',
+        message: 'El email está disponible para registro'
+      };
+    } catch (error) {
+      if (error.response?.status === 409) {
+        return {
+          status: 'exists',
+          message: 'El email ya está registrado en el sistema'
+        };
+      }
+      return {
+        status: 'error',
+        message: 'No se pudo verificar la disponibilidad del email'
+      };
+    }
+  } catch (error) {
+    console.error("Error en diagnóstico de registro:", error);
+    return {
+      status: 'error',
+      message: 'Error realizando diagnóstico de registro'
+    };
+  }
+};
+
 // Exportamos tanto individualmente (para import nombrado) como objeto completo
 export default {
+  // Registro público
+  register,
+  
+  // Diagnóstico
+  checkServerStatus,
+  diagnoseRegistration,
+  
   // Perfil
   getUserProfile,
   updateUserProfile,

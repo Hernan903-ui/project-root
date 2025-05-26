@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Prueba de Conexión Backend</title>
+    <style>
+        body { font-family: Arial; margin: 20px; }
+        .result { margin: 10px 0; padding: 10px; border-radius: 5px; }
+        .success { background-color: #d4edda; }
+        .error { background-color: #f8d7da; }
+        button { padding: 10px; margin: 5px; }
+    </style>
+</head>
+<body>
+    <h1>Diagnóstico de Conexión al Backend</h1>
+    <div>
+        <label for="backendUrl">URL del Backend:</label>
+        <input type="text" id="backendUrl" value="http://localhost:8000" style="width: 300px;">
+        <button onclick="testEndpoint('/health')">Probar /health</button>
+        <button onclick="testEndpoint('/api/health')">Probar /api/health</button>
+        <button onclick="testEndpoint('/api/auth/health')">Probar /api/auth/health</button>
+    </div>
+    <div id="results"></div>
+
+    <script>
+        async function testEndpoint(endpoint) {
+            const baseUrl = document.getElementById('backendUrl').value;
+            const url = `${baseUrl}${endpoint}`;
+            const resultsDiv = document.getElementById('results');
+            
+            const resultEl = document.createElement('div');
+            resultEl.className = 'result';
+            resultEl.innerHTML = `<strong>Probando: ${url}</strong><br>`;
+            resultsDiv.prepend(resultEl);
+            
+            try {
+                const startTime = Date.now();
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: { 'Accept': 'application/json' },
+                    // Reducir el timeout para diagnóstico
+                    signal: AbortSignal.timeout(5000)
+                });
+                const endTime = Date.now();
+                
+                if (response.ok) {
+                    const data = await response.text();
+                    resultEl.className = 'result success';
+                    resultEl.innerHTML += `✅ Conexión exitosa (${endTime - startTime}ms)<br>Respuesta: ${data}`;
+                } else {
+                    resultEl.className = 'result error';
+                    resultEl.innerHTML += `⚠️ Error ${response.status}: ${response.statusText}`;
+                }
+            } catch (error) {
+                resultEl.className = 'result error';
+                resultEl.innerHTML += `❌ Error: ${error.message}`;
+                
+                // Intenta con IP literal si falló con localhost
+                if (baseUrl.includes('localhost')) {
+                    resultEl.innerHTML += `<br>Intentando con IP literal...`;
+                    try {
+                        const ipUrl = url.replace('localhost', '127.0.0.1');
+                        const ipResponse = await fetch(ipUrl, { 
+                            method: 'GET',
+                            signal: AbortSignal.timeout(5000)
+                        });
+                        if (ipResponse.ok) {
+                            resultEl.innerHTML += `<br>✅ Funcionó con ${ipUrl}! Usa esta URL en tu configuración.`;
+                        }
+                    } catch (ipError) {
+                        resultEl.innerHTML += `<br>❌ También falló con IP literal: ${ipError.message}`;
+                    }
+                }
+            }
+        }
+    </script>
+</body>
+</html>

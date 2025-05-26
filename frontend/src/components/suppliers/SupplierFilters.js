@@ -1,139 +1,109 @@
 import React, { useState } from 'react';
 import { 
   Box, 
-  Grid, 
   TextField, 
-  Button, 
   FormControl, 
   InputLabel, 
   Select, 
-  MenuItem,
-  IconButton,
-  Tooltip
+  MenuItem, 
+  Button,
+  Grid
 } from '@mui/material';
-import { Search as SearchIcon, Clear as ClearIcon } from '@mui/icons-material';
 
-const SupplierFilters = ({ onFilter }) => {
+const SupplierFilters = ({ onFilterChange }) => {
   const [filters, setFilters] = useState({
     search: '',
-    status: 'all',
-    category: ''
+    status: '',
+    city: '',
+    country: ''
   });
 
-  const handleInputChange = (e) => {
+  const handleChange = (e) => {
     const { name, value } = e.target;
-    setFilters({
-      ...filters,
-      [name]: value
-    });
+    const newFilters = { ...filters, [name]: value };
+    setFilters(newFilters);
+    if (onFilterChange) {
+      onFilterChange(newFilters);
+    }
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    onFilter(filters);
-  };
-
-  const handleReset = () => {
-    const resetFilters = {
+  const handleClear = () => {
+    const clearedFilters = {
       search: '',
-      status: 'all',
-      category: ''
+      status: '',
+      city: '',
+      country: ''
     };
-    setFilters(resetFilters);
-    onFilter(resetFilters);
+    setFilters(clearedFilters);
+    if (onFilterChange) {
+      onFilterChange(clearedFilters);
+    }
   };
 
   return (
-    <Box component="form" onSubmit={handleSubmit} sx={{ p: 2 }}>
-      <Grid container spacing={2} alignItems="center">
-        {/* Actualizado a Grid v2 */}
-        <Grid gridColumn={{ xs: "span 12", sm: "span 4", md: "span 3" }}>
+    <Box sx={{ mb: 2 }}>
+      <Grid container spacing={2}>
+        <Grid item xs={12} sm={6} md={3}>
           <TextField
-            fullWidth
             name="search"
-            label="Buscar proveedor"
+            label="Buscar"
             variant="outlined"
             size="small"
+            fullWidth
             value={filters.search}
-            onChange={handleInputChange}
-            placeholder="Nombre, contacto, email..."
-            InputProps={{
-              endAdornment: filters.search && (
-                <Tooltip title="Limpiar búsqueda">
-                  <IconButton
-                    size="small"
-                    onClick={() => {
-                      setFilters({...filters, search: ''});
-                    }}
-                  >
-                    <ClearIcon fontSize="small" />
-                  </IconButton>
-                </Tooltip>
-              )
-            }}
+            onChange={handleChange}
           />
         </Grid>
-        {/* Actualizado a Grid v2 */}
-        <Grid gridColumn={{ xs: "span 12", sm: "span 4", md: "span 2" }}>
+        <Grid item xs={12} sm={6} md={3}>
           <FormControl fullWidth size="small">
-            <InputLabel id="status-select-label">Estado</InputLabel>
+            <InputLabel>Estado</InputLabel>
             <Select
-              labelId="status-select-label"
-              id="status-select"
               name="status"
               value={filters.status}
+              onChange={handleChange}
               label="Estado"
-              onChange={handleInputChange}
             >
-              <MenuItem value="all">Todos</MenuItem>
-              <MenuItem value="active">Activos</MenuItem>
-              <MenuItem value="inactive">Inactivos</MenuItem>
+              <MenuItem value="">Todos</MenuItem>
+              <MenuItem value="active">Activo</MenuItem>
+              <MenuItem value="inactive">Inactivo</MenuItem>
+              <MenuItem value="suspended">Suspendido</MenuItem>
             </Select>
           </FormControl>
         </Grid>
-        {/* Actualizado a Grid v2 */}
-        <Grid gridColumn={{ xs: "span 12", sm: "span 4", md: "span 3" }}>
-          <FormControl fullWidth size="small">
-            <InputLabel id="category-select-label">Categoría</InputLabel>
-            <Select
-              labelId="category-select-label"
-              id="category-select"
-              name="category"
-              value={filters.category}
-              label="Categoría"
-              onChange={handleInputChange}
-            >
-              <MenuItem value="">Todas</MenuItem>
-              <MenuItem value="general">General</MenuItem>
-              <MenuItem value="electronics">Electrónica</MenuItem>
-              <MenuItem value="food">Alimentos</MenuItem>
-              <MenuItem value="clothing">Ropa</MenuItem>
-              <MenuItem value="services">Servicios</MenuItem>
-              <MenuItem value="other">Otros</MenuItem>
-            </Select>
-          </FormControl>
+        <Grid item xs={12} sm={6} md={3}>
+          <TextField
+            name="city"
+            label="Ciudad"
+            variant="outlined"
+            size="small"
+            fullWidth
+            value={filters.city}
+            onChange={handleChange}
+          />
         </Grid>
-        {/* Actualizado a Grid v2 */}
-        <Grid gridColumn={{ xs: "span 12", sm: "span 4", md: "span 4" }}>
-          <Box sx={{ display: 'flex', gap: 1 }}>
-            <Button
-              type="submit"
-              variant="contained"
-              color="primary"
-              startIcon={<SearchIcon />}
-            >
-              Filtrar
-            </Button>
-            <Button
-              variant="outlined"
-              onClick={handleReset}
-              startIcon={<ClearIcon />}
-            >
-              Limpiar
-            </Button>
-          </Box>
+        <Grid item xs={12} sm={6} md={3}>
+          <TextField
+            name="country"
+            label="País"
+            variant="outlined"
+            size="small"
+            fullWidth
+            value={filters.country}
+            onChange={handleChange}
+          />
         </Grid>
       </Grid>
+      {(filters.search || filters.status || filters.city || filters.country) && (
+        <Box sx={{ mt: 1, display: 'flex', justifyContent: 'flex-end' }}>
+          <Button 
+            size="small" 
+            onClick={handleClear}
+            variant="text"
+          >
+            Limpiar filtros
+          </Button>
+        </Box>
+      )}
     </Box>
   );
 };

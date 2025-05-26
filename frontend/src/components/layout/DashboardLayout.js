@@ -1,5 +1,5 @@
 //src/components/layout/DashboardLayout.js
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, Suspense } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import {
   Box,
@@ -23,6 +23,9 @@ import {
   CssBaseline,
   Tooltip,
   Container,
+  CircularProgress,
+  Alert,
+  Button
 } from '@mui/material';
 import {
   Menu as MenuIcon,
@@ -40,6 +43,7 @@ import {
   LocalShipping as SupplierIcon,
   ShoppingBasket as PurchaseOrderIcon,
   Notifications as NotificationsIcon,
+  Error as ErrorIcon
 } from '@mui/icons-material';
 import { useDispatch, useSelector } from 'react-redux';
 import { logout } from '../../features/auth/authSlice';
@@ -48,6 +52,65 @@ import ThemeToggle from '../common/ThemeToggle';
 import NotificationCenter from '../common/NotificationCenter';
 import SkipLink from '../common/SkipLink';
 import { useNotification } from '../../context/NotificationContext';
+
+// Componente para envolver las rutas con Suspense y Error Boundary
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error("Error en componente:", error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <Box sx={{ p: 3, textAlign: 'center' }}>
+          <Alert 
+            severity="error" 
+            icon={<ErrorIcon fontSize="large" />}
+            sx={{ mb: 2, justifyContent: 'center' }}
+          >
+            <Typography variant="h5">Algo salió mal</Typography>
+          </Alert>
+          <Typography sx={{ mb: 2 }}>
+            Ocurrió un error al cargar esta página. Por favor, intenta recargar.
+          </Typography>
+          <Button 
+            variant="contained" 
+            color="primary"
+            onClick={() => {
+              this.setState({ hasError: false, error: null });
+              window.location.reload();
+            }}
+          >
+            Recargar página
+          </Button>
+        </Box>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
+// Contenedor de carga para Suspense
+const LoadingFallback = () => (
+  <Box sx={{ 
+    display: 'flex', 
+    justifyContent: 'center', 
+    alignItems: 'center', 
+    height: '50vh' 
+  }}>
+    <CircularProgress />
+  </Box>
+);
 
 const drawerWidth = 240;
 
@@ -60,7 +123,10 @@ const DashboardLayout = () => {
   const location = useLocation();
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
-  const { notify } = useNotification();
+  
+  // Manejar caso donde useNotification no está disponible
+  const notificationContext = React.useContext(React.createContext(null));
+  const notify = notificationContext?.notify || ((...args) => console.log('Notification:', ...args));
 
   // Mock notifications para el ejemplo
   const [notifications, setNotifications] = useState([
@@ -264,18 +330,26 @@ const DashboardLayout = () => {
             {activeMenuTitle}
           </Typography>
           
-          <NotificationCenter 
-            notifications={notifications} 
-            onRead={handleNotificationRead} 
-            onClearAll={handleClearAllNotifications}
-            onAction={handleNotificationAction}
-          />
+          {NotificationCenter ? (
+            <NotificationCenter 
+              notifications={notifications} 
+              onRead={handleNotificationRead} 
+              onClearAll={handleClearAllNotifications}
+              onAction={handleNotificationAction}
+            />
+          ) : (
+            <IconButton color="inherit" disabled>
+              <Badge badgeContent={0} color="error">
+                <NotificationsIcon />
+              </Badge>
+            </IconButton>
+          )}
 
           <Box sx={{ mx: 1 }}>
-            <TextSizeAdjuster />
+            {TextSizeAdjuster ? <TextSizeAdjuster /> : null}
           </Box>
           <Box sx={{ mx: 1 }}>
-            <ThemeToggle />
+            {ThemeToggle ? <ThemeToggle /> : null}
           </Box>
           
           <Tooltip title="Cuenta">
@@ -291,9 +365,11 @@ const DashboardLayout = () => {
             >
               <Avatar
                 alt={user?.name || 'Usuario'}
-                src={user?.avatar || '/static/images/avatar/default.jpg'}
+                src={user?.avatar || undefined}
                 sx={{ width: 32, height: 32 }}
-              />
+              >
+                {user?.name?.charAt(0) || 'U'}
+              </Avatar>
             </IconButton>
           </Tooltip>
           
@@ -398,7 +474,11 @@ const DashboardLayout = () => {
         }}
       >
         <Container maxWidth="xl" sx={{ py: 3, px: { xs: 2, sm: 3 } }}>
-          <Outlet />
+          <ErrorBoundary>
+            <Suspense fallback={<LoadingFallback />}>
+              <Outlet />
+            </Suspense>
+          </ErrorBoundary>
         </Container>
       </Box>
     </Box>

@@ -2,6 +2,15 @@ from fastapi import Request, HTTPException, status
 import time
 from typing import Dict, List, Tuple
 import asyncio
+import os
+
+ENABLE_RATE_LIMITING = os.getenv("ENABLE_RATE_LIMITING", "false").lower() == "true"
+
+async def rate_limiting_middleware(request: Request, call_next):
+    """Middleware para implementar rate limiting."""
+    # Saltar completamente el rate limiting en entorno de desarrollo
+    if not ENABLE_RATE_LIMITING:
+        return await call_next(request)
 
 class RateLimiter:
     def __init__(self, calls: int = 100, period: int = 60):  # Cambiado de 10 a 100

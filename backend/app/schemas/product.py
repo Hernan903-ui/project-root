@@ -1,112 +1,56 @@
-from pydantic import BaseModel, Field, validator
-from typing import Optional, List, Annotated
+from pydantic import BaseModel, Field, constr
+from typing import Optional, List, Annotated # Added Annotated
 from datetime import datetime
 
 # Forward declaration for Category to avoid circular import issues
-class Category(BaseModel): 
+# if Category schema also imports Product.
+class Category(BaseModel):
     id: int
     name: str
-    
+    # Add other fields if they are accessed directly when ProductWithCategory is serialized
     class Config:
-        from_attributes = True  # orm_mode está obsoleto en Pydantic v2
+        orm_mode = True
 
 class ProductBase(BaseModel):
-    name: str
-    description: Optional[str] = None
-    sku: str
-    barcode: Optional[str] = None
-    price: float
-    cost_price: float
-    tax_rate: float = 0.0
-    category_id: int
-    stock_quantity: int = 0
-    min_stock_level: int = 0
+    name: Annotated[str, constr(min_length=1, max_length=50)]
+    description: Annotated[Optional[str], constr(max_length=250)] = None
+    sku: Annotated[str, constr(min_length=1, max_length=250)]
+    barcode: Annotated[Optional[str], constr(max_length=50)] = None # Assuming barcode can be optional
+    price: Annotated[float, Field(gt=0)] # Price must be greater than 0
+    cost_price: Annotated[float, Field(ge=0)] # Cost price can be 0 or more
+    tax_rate: Annotated[float, Field(default=0.0, ge=0, le=1)] = 0.0 # Tax rate between 0 and 1 (0% to 100%)
+    category_id: Annotated[int, Field(gt=0)] # Category ID must be a positive integer
+    stock_quantity: Annotated[int, Field(default=0, ge=0)] = 0 # Stock quantity can be 0 or more
+    min_stock_level: Annotated[int, Field(default=0, ge=0)] = 0 # Min stock level can be 0 or more
     is_active: bool = True
-    
-    # Validaciones usando validators en lugar de constr y Field
-    @validator('name')
-    def validate_name(cls, v):
-        if not v or len(v) > 50:
-            raise ValueError('name must be 1-50 characters')
-        return v
-    
-    @validator('description')
-    def validate_description(cls, v):
-        if v and len(v) > 250:
-            raise ValueError('description must be at most 250 characters')
-        return v
-    
-    @validator('sku')
-    def validate_sku(cls, v):
-        if not v or len(v) > 250:
-            raise ValueError('sku must be 1-250 characters')
-        return v
-    
-    @validator('barcode')
-    def validate_barcode(cls, v):
-        if v and len(v) > 50:
-            raise ValueError('barcode must be at most 50 characters')
-        return v
-    
-    @validator('price')
-    def validate_price(cls, v):
-        if v <= 0:
-            raise ValueError('price must be greater than 0')
-        return v
-    
-    @validator('cost_price')
-    def validate_cost_price(cls, v):
-        if v < 0:
-            raise ValueError('cost_price must be non-negative')
-        return v
-    
-    @validator('tax_rate')
-    def validate_tax_rate(cls, v):
-        if v < 0 or v > 1:
-            raise ValueError('tax_rate must be between 0 and 1')
-        return v
-    
-    @validator('category_id')
-    def validate_category_id(cls, v):
-        if v <= 0:
-            raise ValueError('category_id must be positive')
-        return v
-    
-    @validator('stock_quantity', 'min_stock_level')
-    def validate_stock(cls, v):
-        if v < 0:
-            raise ValueError('stock values must be non-negative')
-        return v
 
 class ProductCreate(ProductBase):
     pass
 
 class ProductUpdate(BaseModel):
-    name: Optional[str] = None
-    description: Optional[str] = None
-    sku: Optional[str] = None
-    barcode: Optional[str] = None
-    price: Optional[float] = None
-    cost_price: Optional[float] = None
-    tax_rate: Optional[float] = None
-    category_id: Optional[int] = None
-    stock_quantity: Optional[int] = None
-    min_stock_level: Optional[int] = None
+    name: Annotated[Optional[str], constr(min_length=1, max_length=50)] = None
+    description: Annotated[Optional[str], constr(max_length=250)] = None
+    sku: Annotated[Optional[str], constr(min_length=1, max_length=250)] = None
+    barcode: Annotated[Optional[str], constr(max_length=50)] = None
+    price: Annotated[Optional[float], Field(gt=0)] = None
+    cost_price: Annotated[Optional[float], Field(ge=0)] = None
+    tax_rate: Annotated[Optional[float], Field(ge=0, le=1)] = None
+    category_id: Annotated[Optional[int], Field(gt=0)] = None
+    stock_quantity: Annotated[Optional[int], Field(ge=0)] = None
+    min_stock_level: Annotated[Optional[int], Field(ge=0)] = None
     is_active: Optional[bool] = None
-    
-    # Podríamos agregar validadores similares aquí si se necesitan 
-    # para validar campos opcionales cuando están presentes
 
 class ProductInDBBase(ProductBase):
-    id: int
+    id: Annotated[int, Field(gt=0)] # ID must be positive
     created_at: datetime
     updated_at: Optional[datetime] = None
 
     class Config:
-        from_attributes = True  # Reemplaza orm_mode en Pydantic v2
+        orm_mode = True
 
 class Product(ProductInDBBase):
     pass
 
 class ProductWithCategory(Product):
-    category: Category
+    # Ensure 'Category' matches the class name of your category schema/stub
+    category: 'Category'

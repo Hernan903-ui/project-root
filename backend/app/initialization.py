@@ -1,10 +1,22 @@
 import logging
 from sqlalchemy.orm import Session
-from .database import SessionLocal
+from sqlalchemy import inspect
+from .database import SessionLocal, engine, Base
 from .models.user import User
 from .utils.security import get_password_hash
 import os
 from dotenv import load_dotenv
+
+# Importar todos los modelos para que SQLAlchemy los reconozca
+from .models.user import User
+from .models.category import Category
+from .models.product import Product
+from .models.customer import Customer
+from .models.sale import Sale, SaleItem
+from .models.inventory import InventoryMovement
+from .models.supplier import Supplier  # Asegúrate de importar el modelo de Supplier
+# Importar también purchase_order si lo has creado
+from .models.purchase_order import PurchaseOrder, purchase_order_items, PurchaseOrderReceipt, PurchaseOrderReceiptItem
 
 load_dotenv()
 
@@ -12,10 +24,37 @@ load_dotenv()
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+def create_tables() -> None:
+    """
+    Crea todas las tablas definidas en los modelos que no existen en la base de datos.
+    """
+    logger.info("Verificando y creando tablas necesarias...")
+    
+    # Obtener tablas existentes
+    inspector = inspect(engine)
+    existing_tables = inspector.get_table_names()
+    
+    # Crear todas las tablas que no existen
+    tables_created = 0
+    for table in Base.metadata.sorted_tables:
+        if table.name not in existing_tables:
+            logger.info(f"Creando tabla: {table.name}")
+            table.create(engine)
+            tables_created += 1
+    
+    if tables_created > 0:
+        logger.info(f"Se crearon {tables_created} tablas nuevas")
+    else:
+        logger.info("Todas las tablas ya existen")
+
 def init_db() -> None:
     """
-    Inicializa la base de datos con datos necesarios (usuario admin).
+    Inicializa la base de datos con datos necesarios (usuario admin) y crea tablas faltantes.
     """
+    # Primero creamos las tablas que faltan
+    create_tables()
+    
+    # Luego inicializamos datos básicos
     db = SessionLocal()
     try:
         # Verificar si ya existe el usuario admin
