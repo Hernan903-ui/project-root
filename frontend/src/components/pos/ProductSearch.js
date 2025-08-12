@@ -1,22 +1,20 @@
 import React, { useState } from 'react';
 import { TextField, InputAdornment, Box, CircularProgress } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
-import { useQuery } from 'react-query';
+import { useQuery } from '@tanstack/react-query';
 import { searchProducts } from '../../api/posApi';
 
 const ProductSearch = ({ onSearch, categoryId }) => {
   const [searchTerm, setSearchTerm] = useState('');
   
-  const { isLoading, refetch } = useQuery(
-    ['searchProducts', searchTerm, categoryId],
-    () => searchProducts(searchTerm, categoryId),
-    {
-      enabled: false,
-      onSuccess: (data) => {
-        onSearch(data);
-      }
+  const { isLoading, refetch } = useQuery({
+    queryKey: ['searchProducts', searchTerm, categoryId],
+    queryFn: () => searchProducts(searchTerm, categoryId),
+    enabled: false,
+    onSuccess: (data) => {
+      onSearch(data);
     }
-  );
+  });
 
   const handleSearch = (e) => {
     const value = e.target.value;

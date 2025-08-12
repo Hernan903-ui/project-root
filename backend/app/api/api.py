@@ -1,5 +1,6 @@
 # app/api/api.py
 from fastapi import APIRouter
+from datetime import datetime
 
 from app.api.routes import (
     auth,
@@ -17,6 +18,17 @@ from app.api.routes import (
 )
 
 api_router = APIRouter()
+
+@api_router.get("/health", tags=["health"])
+def api_health_check():
+    """
+    Endpoint para verificar que la API está funcionando correctamente.
+    """
+    return {
+        "status": "ok",
+        "timestamp": datetime.utcnow().isoformat(),
+        "service": "api"
+    }
 
 # Incluir todos los routers con sus prefijos correspondientes
 api_router.include_router(auth.router, prefix="/auth", tags=["auth"])

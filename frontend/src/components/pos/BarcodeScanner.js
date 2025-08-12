@@ -6,12 +6,10 @@ import {
   IconButton,
   Box,
   CircularProgress,
-  Snackbar,
-  Alert,
 } from '@mui/material';
 import QrCodeScannerIcon from '@mui/icons-material/QrCodeScanner';
 import { useSnackbar } from 'notistack';
-import { useMutation } from 'react-query';
+import { useMutation } from '@tanstack/react-query';
 
 import { getProductByBarcode } from '../../api/posApi';
 import { addItem } from '../../features/pos/cartSlice';
@@ -21,7 +19,8 @@ const BarcodeScanner = () => {
   const { enqueueSnackbar } = useSnackbar();
   const [barcode, setBarcode] = useState('');
   
-  const { mutate, isLoading } = useMutation(getProductByBarcode, {
+  const { mutate, isLoading } = useMutation({    
+    mutationFn: getProductByBarcode,
     onSuccess: (product) => {
       if (product) {
         dispatch(addItem({ product, quantity: 1 }));

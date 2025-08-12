@@ -1,169 +1,190 @@
-import React, { useState } from 'react';
-import { 
-  Box, 
-  Grid, 
-  TextField, 
-  Button, 
-  FormControl, 
-  InputLabel, 
-  Select, 
-  MenuItem,
-  IconButton,
-  Tooltip
-} from '@mui/material';
-import { Search as SearchIcon, Clear as ClearIcon } from '@mui/icons-material';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { es } from 'date-fns/locale';
+"use client"
 
-const PurchaseOrderFilters = ({ onFilter }) => {
+import { useState } from "react"
+import {
+  Box,
+  TextField,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  Button,
+  Grid,
+  Paper,
+  Collapse,
+  IconButton,
+  Typography,
+} from "@mui/material"
+import {
+  Search as SearchIcon,
+  Clear as ClearIcon,
+  ExpandMore as ExpandMoreIcon,
+  ExpandLess as ExpandLessIcon,
+} from "@mui/icons-material"
+import { DatePicker } from "@mui/x-date-pickers/DatePicker"
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider"
+import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns"
+import { es } from "date-fns/locale"
+
+const PurchaseOrderFilters = ({ onFilter = () => {} }) => {
+  const [expanded, setExpanded] = useState(false)
   const [filters, setFilters] = useState({
-    search: '',
-    status: 'all',
+    search: "",
+    status: "",
+    supplier: "",
     dateFrom: null,
     dateTo: null,
-    supplierId: ''
-  });
+    minAmount: "",
+    maxAmount: "",
+  })
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFilters({
-      ...filters,
-      [name]: value
-    });
-  };
+  const statusOptions = [
+    { value: "", label: "Todos los estados" },
+    { value: "draft", label: "Borrador" },
+    { value: "pending", label: "Pendiente" },
+    { value: "confirmed", label: "Confirmada" },
+    { value: "received", label: "Recibida" },
+    { value: "cancelled", label: "Cancelada" },
+  ]
 
-  const handleDateChange = (date, name) => {
-    setFilters({
-      ...filters,
-      [name]: date
-    });
-  };
+  const handleFilterChange = (field, value) => {
+    const newFilters = { ...filters, [field]: value }
+    setFilters(newFilters)
+  }
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    onFilter(filters);
-  };
+  const handleApplyFilters = () => {
+    // Filtrar valores vacíos antes de enviar
+    const activeFilters = Object.entries(filters).reduce((acc, [key, value]) => {
+      if (value !== "" && value !== null && value !== undefined) {
+        acc[key] = value
+      }
+      return acc
+    }, {})
 
-  const handleReset = () => {
-    const resetFilters = {
-      search: '',
-      status: 'all',
+    onFilter(activeFilters)
+  }
+
+  const handleClearFilters = () => {
+    const clearedFilters = {
+      search: "",
+      status: "",
+      supplier: "",
       dateFrom: null,
       dateTo: null,
-      supplierId: ''
-    };
-    setFilters(resetFilters);
-    onFilter(resetFilters);
-  };
+      minAmount: "",
+      maxAmount: "",
+    }
+    setFilters(clearedFilters)
+    onFilter({})
+  }
 
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={es}>
-      <Box component="form" onSubmit={handleSubmit} sx={{ p: 2 }}>
-        <Grid container spacing={2} alignItems="center">
-          {/* Actualizado a Grid v2 */}
-          <Grid gridColumn={{ xs: "span 12", sm: "span 6", md: "span 3" }}>
+      <Paper sx={{ p: 2, mb: 2 }}>
+        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 2 }}>
+          <Typography variant="h6">Filtros</Typography>
+          <IconButton onClick={() => setExpanded(!expanded)}>
+            {expanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+          </IconButton>
+        </Box>
+
+        {/* Filtros básicos - siempre visibles */}
+        <Grid container spacing={2} sx={{ mb: 2 }}>
+          <Grid item xs={12} md={6}>
             <TextField
               fullWidth
-              name="search"
-              label="Buscar"
-              variant="outlined"
-              size="small"
+              label="Buscar por número de orden"
               value={filters.search}
-              onChange={handleInputChange}
-              placeholder="Número de orden, proveedor..."
+              onChange={(e) => handleFilterChange("search", e.target.value)}
               InputProps={{
-                endAdornment: filters.search && (
-                  <Tooltip title="Limpiar búsqueda">
-                    <IconButton
-                      size="small"
-                      onClick={() => {
-                        setFilters({...filters, search: ''});
-                      }}
-                    >
-                      <ClearIcon fontSize="small" />
-                    </IconButton>
-                  </Tooltip>
-                )
+                startAdornment: <SearchIcon sx={{ mr: 1, color: "action.active" }} />,
               }}
             />
           </Grid>
-          {/* Actualizado a Grid v2 */}
-          <Grid gridColumn={{ xs: "span 12", sm: "span 6", md: "span 2" }}>
-            <FormControl fullWidth size="small">
-              <InputLabel id="status-select-label">Estado</InputLabel>
+          <Grid item xs={12} md={3}>
+            <FormControl fullWidth>
+              <InputLabel>Estado</InputLabel>
               <Select
-                labelId="status-select-label"
-                id="status-select"
-                name="status"
                 value={filters.status}
                 label="Estado"
-                onChange={handleInputChange}
+                onChange={(e) => handleFilterChange("status", e.target.value)}
               >
-                <MenuItem value="all">Todos</MenuItem>
-                <MenuItem value="draft">Borrador</MenuItem>
-                <MenuItem value="pending">Pendiente</MenuItem>
-                <MenuItem value="confirmed">Confirmada</MenuItem>
-                <MenuItem value="received">Recibida</MenuItem>
-                <MenuItem value="cancelled">Cancelada</MenuItem>
+                {statusOptions.map((option) => (
+                  <MenuItem key={option.value} value={option.value}>
+                    {option.label}
+                  </MenuItem>
+                ))}
               </Select>
             </FormControl>
           </Grid>
-          {/* Actualizado a Grid v2 y DatePicker moderno */}
-          <Grid gridColumn={{ xs: "span 12", sm: "span 6", md: "span 2" }}>
-            <DatePicker
-              label="Desde"
-              value={filters.dateFrom}
-              onChange={(date) => handleDateChange(date, 'dateFrom')}
-              maxDate={filters.dateTo}
-              slotProps={{ 
-                textField: { 
-                  size: "small", 
-                  fullWidth: true 
-                } 
-              }}
-            />
-          </Grid>
-          {/* Actualizado a Grid v2 y DatePicker moderno */}
-          <Grid gridColumn={{ xs: "span 12", sm: "span 6", md: "span 2" }}>
-            <DatePicker
-              label="Hasta"
-              value={filters.dateTo}
-              onChange={(date) => handleDateChange(date, 'dateTo')}
-              minDate={filters.dateFrom}
-              slotProps={{ 
-                textField: { 
-                  size: "small", 
-                  fullWidth: true 
-                } 
-              }}
-            />
-          </Grid>
-          {/* Actualizado a Grid v2 */}
-          <Grid gridColumn={{ xs: "span 12", sm: "span 12", md: "span 3" }}>
-            <Box sx={{ display: 'flex', gap: 1 }}>
-              <Button
-                type="submit"
-                variant="contained"
-                color="primary"
-                startIcon={<SearchIcon />}
-              >
+          <Grid item xs={12} md={3}>
+            <Box sx={{ display: "flex", gap: 1 }}>
+              <Button variant="contained" onClick={handleApplyFilters} startIcon={<SearchIcon />} sx={{ flexGrow: 1 }}>
                 Filtrar
               </Button>
-              <Button
-                variant="outlined"
-                onClick={handleReset}
-                startIcon={<ClearIcon />}
-              >
+              <Button variant="outlined" onClick={handleClearFilters} startIcon={<ClearIcon />}>
                 Limpiar
               </Button>
             </Box>
           </Grid>
         </Grid>
-      </Box>
-    </LocalizationProvider>
-  );
-};
 
-export default PurchaseOrderFilters;
+        {/* Filtros avanzados - colapsables */}
+        <Collapse in={expanded}>
+          <Grid container spacing={2}>
+            <Grid item xs={12} md={4}>
+              <TextField
+                fullWidth
+                label="Proveedor"
+                value={filters.supplier}
+                onChange={(e) => handleFilterChange("supplier", e.target.value)}
+              />
+            </Grid>
+            <Grid item xs={12} md={4}>
+              <DatePicker
+                label="Fecha desde"
+                value={filters.dateFrom}
+                onChange={(date) => handleFilterChange("dateFrom", date)}
+                renderInput={(params) => <TextField {...params} fullWidth />}
+              />
+            </Grid>
+            <Grid item xs={12} md={4}>
+              <DatePicker
+                label="Fecha hasta"
+                value={filters.dateTo}
+                onChange={(date) => handleFilterChange("dateTo", date)}
+                renderInput={(params) => <TextField {...params} fullWidth />}
+              />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Monto mínimo"
+                type="number"
+                value={filters.minAmount}
+                onChange={(e) => handleFilterChange("minAmount", e.target.value)}
+                InputProps={{
+                  startAdornment: "$",
+                }}
+              />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Monto máximo"
+                type="number"
+                value={filters.maxAmount}
+                onChange={(e) => handleFilterChange("maxAmount", e.target.value)}
+                InputProps={{
+                  startAdornment: "$",
+                }}
+              />
+            </Grid>
+          </Grid>
+        </Collapse>
+      </Paper>
+    </LocalizationProvider>
+  )
+}
+
+export default PurchaseOrderFilters

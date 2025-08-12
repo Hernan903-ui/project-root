@@ -3,7 +3,6 @@ import { useDispatch, useSelector } from 'react-redux';
 import {
   Box,
   Typography,
-  Grid,
   Paper,
   Button,
   TextField,
@@ -19,7 +18,6 @@ import {
   DialogActions
 } from '@mui/material';
 import {
-  Add as AddIcon,
   Refresh as RefreshIcon,
   FilterList as FilterIcon,
   Print as PrintIcon,
@@ -29,7 +27,6 @@ import {
 import { DataGrid } from '@mui/x-data-grid';
 // Importación de inventorySlice (esta sí existe)
 import { fetchInventory, updateInventoryItem } from '../features/inventory/inventorySlice';
-import { fetchProducts } from '../features/products/productSlice';
 import { generatePDF } from '../utils/reportGenerator'; // Esta ya la creamos
 
 const InventoryPage = () => {
@@ -37,13 +34,11 @@ const InventoryPage = () => {
   // Obtener el estado del inventario del Redux store, con valor por defecto para items
   const { items = [], loading, error } = useSelector((state) => state.inventory || { items: [] });
   // Placeholder vacío si no hay slice de productos
-  const products = [];
 
   const [tabValue, setTabValue] = useState(0);
-  const [openAddForm, setOpenAddForm] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [filters, setFilters] = useState({
+  const [filters] = useState({
     category: '',
     minStock: '',
     maxStock: '',
@@ -64,27 +59,13 @@ const InventoryPage = () => {
     setTabValue(newValue);
   };
 
-  const handleOpenAddForm = () => {
-    setSelectedItem(null);
-    setOpenAddForm(true);
-  };
 
-  const handleCloseAddForm = () => {
-    setOpenAddForm(false);
-  };
 
   const handleSearchChange = (e) => {
     setSearchQuery(e.target.value);
   };
 
-  const handleFilterChange = (newFilters) => {
-    setFilters(newFilters);
-  };
 
-  const handleRowClick = (params) => {
-    setSelectedItem(params.row);
-    setOpenAddForm(true);
-  };
 
   const handleGenerateReport = () => {
     generatePDF('Reporte de Inventario', filteredItems, [
@@ -289,7 +270,9 @@ const InventoryPage = () => {
                 <CircularProgress />
               </Box>
             ) : error ? (
-              <Typography color="error">{error}</Typography>
+              <Typography color="error">
+                {typeof error === 'object' ? (error.detail || error.message || JSON.stringify(error)) : error}
+              </Typography>
             ) : (
               <DataGrid
                 rows={filteredItems}

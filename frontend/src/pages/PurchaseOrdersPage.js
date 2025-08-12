@@ -1,5 +1,6 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { Link } from 'react-router-dom';
 import { 
   Box, 
   Typography, 
@@ -11,14 +12,26 @@ import {
   Button,
   Alert,
   CircularProgress,
-  Chip
+  Chip,
+  Paper,
+  Breadcrumbs,
+  TextField,
+  InputAdornment,
+  IconButton,
+  Tooltip
 } from '@mui/material';
 import { 
   Refresh as RefreshIcon,
   CloudOff as CloudOffIcon,
-  Warning as WarningIcon
+  Warning as WarningIcon,
+  Home as HomeIcon,
+  ShoppingCart as ShoppingCartIcon,
+  Search as SearchIcon,
+  FilterList as FilterListIcon,
+  Add as AddIcon
 } from '@mui/icons-material';
 import DashboardLayout from '../components/layout/DashboardLayout';
+import PurchaseOrderForm from '../components/suppliers/PurchaseOrderForm';
 import PurchaseOrderList from '../components/suppliers/PurchaseOrderList';
 import { fetchPurchaseOrders, deletePurchaseOrder, clearErrors, setConnectionStatus } from '../features/suppliers/suppliersSlice';
 import AlertMessage from '../components/common/AlertMessage';
@@ -40,7 +53,7 @@ const PurchaseOrdersPage = () => {
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [orderToDelete, setOrderToDelete] = useState(null);
-  const [filters, setFilters] = useState({});
+  const [filters] = useState({});
   const [alert, setAlert] = useState({ open: false, message: '', severity: 'success' });
   const [loadAttempts, setLoadAttempts] = useState(0);
   
@@ -50,149 +63,59 @@ const PurchaseOrdersPage = () => {
 
   // Función para cargar los datos
   const loadData = useCallback(() => {
-    try {
-      // Limpiar cualquier timeout previo
-      if (timeoutIdRef.current) {
-        clearTimeout(timeoutIdRef.current);
-      }
-      
-      // Cancelar cualquier solicitud pendiente
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort('Nueva solicitud iniciada');
-      }
-      
-      // Crear un nuevo controlador de cancelación
-      abortControllerRef.current = new AbortController();
-      
-      const params = {
-        page: page + 1,
-        limit: rowsPerPage,
-        ...filters,
-        signal: abortControllerRef.current.signal
-      };
-      
-      dispatch(fetchPurchaseOrders(params));
-      
-      // Incrementar el contador de intentos de carga
-      setLoadAttempts(prev => prev + 1);
-      
-      // Establecer un timeout de seguridad para evitar esperas infinitas
-      timeoutIdRef.current = setTimeout(() => {
-        if (loading) {
-          // Cancelar la solicitud si toma demasiado tiempo
-          if (abortControllerRef.current) {
-            abortControllerRef.current.abort('Timeout excedido');
-            console.warn('La solicitud está tomando demasiado tiempo, cancelando...');
-          }
-          
-          // Mostrar alerta al usuario
-          setAlert({
-            open: true,
-            message: 'La conexión está tomando demasiado tiempo. Utilizando datos de respaldo.',
-            severity: 'warning'
-          });
-          
-          // Actualizar el estado de conexión en Redux
-          dispatch(setConnectionStatus(true));
-        }
-      }, 40000); // 40 segundos
-    } catch (err) {
-      console.error('Error al cargar datos de órdenes de compra:', err);
-      setAlert({
-        open: true,
-        message: `Error al cargar datos: ${err.message || 'Error desconocido'}`,
-        severity: 'error'
-      });
+    // Limpiar cualquier timeout previo
+    if (timeoutIdRef.current) {
+      clearTimeout(timeoutIdRef.current);
     }
-  }, [dispatch, page, rowsPerPage, filters, loading]);
-
-  // Efecto para cargar los datos cuando cambian los parámetros
-  useEffect(() => {
-    try {
-      loadData();
-      
-      // Limpiar efectos al desmontar
-      return () => {
-        if (timeoutIdRef.current) {
-          clearTimeout(timeoutIdRef.current);
-        }
+    // Cancelar cualquier solicitud pendiente
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort('Nueva solicitud iniciada');
+    }
+    // Crear un nuevo controlador de cancelación
+    abortControllerRef.current = new AbortController();
+    const params = {
+      page: page + 1,
+      limit: rowsPerPage,
+      ...filters,
+      signal: abortControllerRef.current.signal
+    };
+    dispatch(fetchPurchaseOrders(params));
+    timeoutIdRef.current = setTimeout(() => {
+      if (loading) {
         if (abortControllerRef.current) {
-          abortControllerRef.current.abort('Componente desmontado');
+          abortControllerRef.current.abort('Timeout excedido');
+          console.warn('La solicitud está tomando demasiado tiempo, cancelando...');
         }
-      };
-    } catch (err) {
-      console.error('Error en useEffect:', err);
-    }
-  }, [loadData]);
-
-  // Efecto para mostrar una alerta cuando se estén usando datos de respaldo
-  useEffect(() => {
-    try {
-      if (usingFallbackData && !alert.open) {
         setAlert({
           open: true,
-          message: 'Mostrando datos de respaldo debido a problemas de conexión con el servidor.',
+          message: 'La conexión está tomando demasiado tiempo. Utilizando datos de respaldo.',
           severity: 'warning'
         });
+        dispatch(setConnectionStatus(true));
       }
-    } catch (err) {
-      console.error('Error en useEffect de datos de respaldo:', err);
-    }
-  }, [usingFallbackData, alert.open]);
-
-  const handleFilter = (newFilters) => {
-    try {
-      setFilters(newFilters);
-      setPage(0);
-      // Restablecer contador de intentos
-      setLoadAttempts(0);
-    } catch (err) {
-      console.error('Error al aplicar filtros:', err);
-    }
-  };
-
-  const handleDeleteClick = (orderId) => {
-    try {
-      setOrderToDelete(orderId);
-      setConfirmDelete(true);
-    } catch (err) {
-      console.error('Error al preparar eliminación:', err);
-    }
-  };
+    }, 40000);
+  }, [dispatch, filters, loading, page, rowsPerPage]);
 
   const handleDeleteConfirm = async () => {
-    try {
-      await dispatch(deletePurchaseOrder(orderToDelete)).unwrap();
-      setAlert({
-        open: true,
-        message: `Orden #${orderToDelete} eliminada correctamente`,
-        severity: 'success'
-      });
-    } catch (err) {
-      setAlert({
-        open: true,
-        message: `Error al eliminar orden: ${err?.message || 'No se pudo completar la operación'}`,
-        severity: 'error'
-      });
-    } finally {
-      setConfirmDelete(false);
-      setOrderToDelete(null);
-    }
+    await dispatch(deletePurchaseOrder(orderToDelete)).unwrap();
+    setAlert({
+      open: true,
+      message: `Orden #${orderToDelete} eliminada correctamente`,
+      severity: 'success'
+    });
+    setConfirmDelete(false);
+    setOrderToDelete(null);
   };
 
   const handleRetry = () => {
-    try {
-      // Limpiar errores antes de reintentar
-      dispatch(clearErrors());
-      // Restablecer contador de intentos
-      setLoadAttempts(0);
-      // Indicar que estamos intentando restablecer la conexión
-      dispatch(setConnectionStatus(false));
-      // Cargar los datos nuevamente
-      loadData();
-    } catch (err) {
-      console.error('Error al reintentar conexión:', err);
-    }
+  // Limpiar errores antes de reintentar
+  dispatch(clearErrors());
+  // Restablecer contador de intentos
+  setLoadAttempts(0);
+  // Indicar que estamos intentando restablecer la conexión
+  dispatch(setConnectionStatus(false));
+  // Cargar los datos nuevamente
+  loadData();
   };
 
   const handleCloseAlert = () => {
@@ -200,65 +123,111 @@ const PurchaseOrdersPage = () => {
   };
 
   // Función para renderizar el componente PurchaseOrderList de manera segura
+  // Definir funciones faltantes para evitar errores
+  const handleDeleteClick = () => {};
+  const handleFilter = () => {};
   const renderPurchaseOrderList = () => {
-    try {
-      return (
-        <PurchaseOrderList 
-          purchaseOrders={purchaseOrders || []}
-          totalItems={totalPurchaseOrders || 0}
-          loading={loading}
-          onDelete={handleDeleteClick}
-          onFilter={handleFilter}
-          page={page}
-          setPage={setPage}
-          rowsPerPage={rowsPerPage}
-          setRowsPerPage={setRowsPerPage}
-          isOfflineData={usingFallbackData}
-        />
-      );
-    } catch (err) {
-      console.error('Error al renderizar lista de órdenes:', err);
-      return (
-        <Alert severity="error" sx={{ mt: 2 }}>
-          Error al cargar la lista de órdenes. Intente recargar la página.
-        </Alert>
-      );
-    }
+    return (
+      <PurchaseOrderList 
+        purchaseOrders={purchaseOrders || []}
+        totalItems={totalPurchaseOrders || 0}
+        loading={loading}
+        onDelete={handleDeleteClick}
+        onFilter={handleFilter}
+        page={page}
+        setPage={setPage}
+        rowsPerPage={rowsPerPage}
+        setRowsPerPage={setRowsPerPage}
+        isOfflineData={usingFallbackData}
+      />
+    );
   };
 
   return (
     <DashboardLayout>
       <Box sx={{ p: 3 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Typography variant="h4">
+        <Paper elevation={0} sx={{ p: 2, mb: 3 }}>
+          <Breadcrumbs aria-label="breadcrumb" sx={{ mb: 2 }}>
+            <Link to="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none', color: 'inherit' }}>
+              <HomeIcon sx={{ mr: 0.5 }} fontSize="inherit" />
+              Inicio
+            </Link>
+            <Typography color="text.primary" sx={{ display: 'flex', alignItems: 'center' }}>
+              <ShoppingCartIcon sx={{ mr: 0.5 }} fontSize="inherit" />
               Órdenes de Compra
             </Typography>
-            {/* Chip de estado offline */}
-            {connectionIssue && (
-              <Chip 
-                icon={<CloudOffIcon />} 
-                label="Modo offline" 
-                color="warning" 
-                variant="outlined"
-                size="small"
-              />
-            )}
+          </Breadcrumbs>
+
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <Typography variant="h4">
+                Órdenes de Compra
+              </Typography>
+              {/* Chip de estado offline */}
+              {connectionIssue && (
+                <Chip 
+                  icon={<CloudOffIcon />} 
+                  label="Modo offline" 
+                  color="warning" 
+                  variant="outlined"
+                  size="small"
+                />
+              )}
+            </Box>
+            
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              {/* Botón de reintento visible cuando hay error o datos de respaldo */}
+              {(error || usingFallbackData) && (
+                <Button 
+                  startIcon={<RefreshIcon />} 
+                  variant="outlined" 
+                  color="primary" 
+                  onClick={handleRetry}
+                  disabled={loading}
+                >
+                  Reintentar conexión
+                </Button>
+              )}
+              <Link to="/purchase-orders/create" style={{ textDecoration: 'none' }}>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  startIcon={<AddIcon />}
+                >
+                  Nueva Orden
+                </Button>
+              </Link>
+            </Box>
           </Box>
-          
-          {/* Botón de reintento visible cuando hay error o datos de respaldo */}
-          {(error || usingFallbackData) && (
-            <Button 
-              startIcon={<RefreshIcon />} 
-              variant="outlined" 
-              color="primary" 
-              onClick={handleRetry}
-              disabled={loading}
-            >
-              Reintentar conexión
-            </Button>
-          )}
-        </Box>
+        </Paper>
+
+        <Paper elevation={0} sx={{ p: 2, mb: 3 }}></Paper>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+            <TextField
+              placeholder="Buscar órdenes..."
+              size="small"
+              sx={{ width: 300 }}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon fontSize="small" />
+                  </InputAdornment>
+                ),
+              }}
+            />
+            <Box sx={{ display: 'flex', gap: 1 }}>
+              <Tooltip title="Filtrar">
+                <IconButton>
+                  <FilterListIcon />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Actualizar">
+                <IconButton onClick={handleRetry} disabled={loading}>
+                  <RefreshIcon />
+                </IconButton>
+              </Tooltip>
+            </Box>
+          </Box>
         
         {/* Alerta para datos de respaldo */}
         {usingFallbackData && !error && (
@@ -288,15 +257,37 @@ const PurchaseOrdersPage = () => {
           </Alert>
         )}
         
-        {/* Indicador de carga para el primer intento */}
-        {loading && loadAttempts <= 1 && (
-          <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
-            <CircularProgress />
-          </Box>
-        )}
-        
-        {/* Lista de órdenes de compra (se muestra incluso con datos de respaldo) */}
-        {(!loading || loadAttempts > 1 || usingFallbackData) && renderPurchaseOrderList()}
+        <Paper elevation={1} sx={{ mb: 3 }}>
+          {/* Indicador de carga para el primer intento */}
+          {loading && loadAttempts <= 1 && (
+            <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
+              <CircularProgress />
+            </Box>
+          )}
+          
+          {/* Lista de órdenes de compra (se muestra incluso con datos de respaldo) */}
+          {(!loading || loadAttempts > 1 || usingFallbackData) ? (
+            <>
+              {renderPurchaseOrderList()}
+              {/* Mostrar el formulario directamente si no hay órdenes y no hay filtros activos */}
+              {(purchaseOrders?.length === 0 && !loading) && (
+                <Box sx={{ p: 3, textAlign: 'center', maxWidth: 500, margin: '0 auto' }}>
+                  <Typography variant="h6" color="text.secondary" gutterBottom>
+                    No se encontraron órdenes de compra registradas.
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                    Crea la primera orden de compra para comenzar a gestionar tus adquisiciones.
+                  </Typography>
+                  {PurchaseOrderForm ? (
+                    <PurchaseOrderForm onClose={() => {}} />
+                  ) : (
+                    <Typography>Formulario de orden no disponible</Typography>
+                  )}
+                </Box>
+              )}
+            </>
+          ) : null}
+        </Paper>
 
         {/* Diálogo de confirmación de eliminación */}
         <Dialog

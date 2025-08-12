@@ -1,10 +1,13 @@
 import React from 'react';
-import { useQuery } from 'react-query';
+import { useQuery } from '@tanstack/react-query';
 import { Box, Tabs, Tab, Skeleton } from '@mui/material';
 import { getCategories } from '../../api/posApi';
 
 const CategoryFilter = ({ selectedCategory, onCategoryChange }) => {
-  const { data: categories, isLoading } = useQuery('categories', getCategories);
+  const { data: categories, isLoading } = useQuery({
+    queryKey: ['categories'],
+    queryFn: getCategories
+  });
 
   if (isLoading) {
     return (

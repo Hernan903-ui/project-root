@@ -251,6 +251,7 @@ def dashboard_sales_report(
     db: Session = Depends(get_db),
     group_by: str = Query("day", enum=["day", "week", "month"])
 ):
+    current_user: Any = Depends(get_current_active_user),
     """Endpoint para el dashboard: Reporte de ventas por período"""
     try:
         # Usamos los últimos 7 días por defecto para el dashboard
@@ -276,6 +277,7 @@ def dashboard_top_products(
     db: Session = Depends(get_db),
     limit: int = Query(10, ge=1, le=100)
 ):
+    current_user: Any = Depends(get_current_active_user),
     """Endpoint para el dashboard: Productos más vendidos"""
     try:
         # Usamos los últimos 30 días por defecto
@@ -308,6 +310,7 @@ def dashboard_top_products(
 def dashboard_low_stock(
     db: Session = Depends(get_db)
 ):
+    current_user: Any = Depends(get_current_active_user),
     """Endpoint para el dashboard: Productos con bajo stock"""
     try:
         try:
@@ -354,6 +357,7 @@ def dashboard_low_stock(
 def dashboard_metrics(
     db: Session = Depends(get_db)
 ):
+    current_user: Any = Depends(get_current_active_user),
     """Endpoint para el dashboard: Métricas generales"""
     # Valores por defecto en caso de error
     default_metrics = {

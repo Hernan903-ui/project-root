@@ -1,27 +1,26 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status, Response
 from sqlalchemy.orm import Session
-
-# Importaciones correctas para tus dependencias
 from app.database import get_db
 from app.utils.security import get_current_user
 from app.models.user import User
 from app.models.supplier import Supplier
 from app.schemas.supplier import SupplierCreate, SupplierUpdate, SupplierResponse
 
-# Crear el router con prefijo específico y tag para documentación
+print("DEBUG: suppliers.py is being loaded!")
+
 router = APIRouter(
-    prefix="/suppliers",
     tags=["suppliers"],
     responses={404: {"description": "Proveedor no encontrado"}}
 )
 
 @router.get("/", response_model=dict)
+@router.get("", response_model=dict)
 async def get_suppliers(
     page: int = Query(1, ge=1, description="Número de página"),
     limit: int = Query(10, ge=1, le=100, description="Elementos por página"),
     name: Optional[str] = Query(None, description="Filtrar por nombre"),
-    status: Optional[str] = Query(None, description="Filtrar por estado (active/inactive)"),
+    status_filter: Optional[str] = Query(None, description="Filtrar por estado (active/inactive)", alias="status"),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
@@ -29,36 +28,24 @@ async def get_suppliers(
     Obtener lista de proveedores con paginación y filtros opcionales.
     """
     try:
-        # Calcular el offset basado en la página y el límite
         skip = (page - 1) * limit
-        
-        # Construir la consulta base
         query = db.query(Supplier)
-        
-        # Aplicar filtros si se proporcionaron
         if name:
             query = query.filter(Supplier.name.ilike(f"%{name}%"))
-        if status:
-            query = query.filter(Supplier.status == status)
-        
-        # Obtener el total de registros para la paginación
+        if status_filter:
+            query = query.filter(Supplier.status == status_filter)
         total = query.count()
-        
-        # Aplicar paginación
         suppliers = query.offset(skip).limit(limit).all()
-        
-        # Calcular total de páginas
         pages = (total + limit - 1) // limit if total > 0 else 1
-        
+        supplier_items = [SupplierResponse.model_validate(supplier) for supplier in suppliers]
         return {
-            "items": suppliers,
+            "items": supplier_items,
             "total": total,
             "page": page,
             "limit": limit,
             "pages": pages
         }
     except Exception as e:
-        # Logging del error
         print(f"Error al obtener proveedores: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

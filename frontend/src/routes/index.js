@@ -17,6 +17,7 @@ import CreateProductPage from '../pages/CreateProductPage';
 import EditProductPage from '../pages/EditProductPage';
 import InventoryPage from '../pages/InventoryPage';
 import SalesPage from '../pages/SalesPage';
+import POSPage from '../pages/POSPage';
 import CustomersPage from '../pages/CustomersPage';
 import SuppliersPage from '../pages/SuppliersPage';
 import SupplierDetailsPage from '../pages/SupplierDetailsPage';
@@ -82,6 +83,7 @@ const router = createBrowserRouter([
 
       // Ventas
       { path: 'sales', element: <SalesPage /> },
+      { path: 'pos', element: <POSPage /> },
 
       // Clientes
       { path: 'customers', element: <CustomersPage /> },

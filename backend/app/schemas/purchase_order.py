@@ -1,104 +1,93 @@
-from typing import List, Optional, Union
+from typing import List, Optional
 from datetime import datetime
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, Field, ConfigDict
 
-# Esquemas para elementos de la orden
 class PurchaseOrderItemBase(BaseModel):
-    product_id: int
-    quantity: int = Field(..., gt=0)
-    unit_price: float = Field(..., ge=0)
-    notes: Optional[str] = None
+    """Esquema base para items de orden de compra"""
+    product_id: int = Field(..., description="ID del producto")
+    quantity: int = Field(..., gt=0, description="Cantidad del producto")
+    unit_price: float = Field(..., ge=0, description="Precio unitario")
+    notes: Optional[str] = Field(None, description="Notas del item")
 
 class PurchaseOrderItemCreate(PurchaseOrderItemBase):
+    """Esquema para crear item de orden de compra"""
     pass
 
-class PurchaseOrderItem(PurchaseOrderItemBase):
+class PurchaseOrderItemResponse(PurchaseOrderItemBase):
+    """Esquema para respuesta de item de orden de compra"""
     id: int
     product_name: Optional[str] = None
     subtotal: float
     
-    class Config:
-        from_attributes = True  # Reemplazado orm_mode por from_attributes
+    model_config = ConfigDict(from_attributes=True)
 
-# Esquemas para la orden de compra
 class PurchaseOrderBase(BaseModel):
-    supplier_id: int
-    expected_delivery_date: Optional[datetime] = None
-    payment_terms: Optional[str] = None
-    shipping_method: Optional[str] = None
-    notes: Optional[str] = None
+    """Esquema base para orden de compra"""
+    supplier_id: int = Field(..., description="ID del proveedor")
+    expected_delivery_date: Optional[datetime] = Field(None, description="Fecha esperada de entrega")
+    payment_terms: Optional[str] = Field(None, max_length=100, description="Términos de pago")
+    shipping_method: Optional[str] = Field(None, max_length=100, description="Método de envío")
+    notes: Optional[str] = Field(None, description="Notas de la orden")
 
 class PurchaseOrderCreate(PurchaseOrderBase):
-    items: List[PurchaseOrderItemCreate]
-    
-    # Reemplazado root_validator por model_validator
-    @model_validator(mode='after')
-    def calculate_totals(self):
-        if hasattr(self, 'items') and self.items:
-            for item in self.items:
-                # Calcular subtotal para cada item
-                # Nota: en Pydantic v2, debes modificar el objeto directamente
-                setattr(item, 'subtotal', item.quantity * item.unit_price)
-        return self
+    """Esquema para crear orden de compra"""
+    items: List[PurchaseOrderItemCreate] = Field(..., min_length=1, description="Items de la orden")
 
 class PurchaseOrderUpdate(BaseModel):
-    supplier_id: Optional[int] = None
-    expected_delivery_date: Optional[datetime] = None
-    status: Optional[str] = None
-    payment_terms: Optional[str] = None
-    shipping_method: Optional[str] = None
-    notes: Optional[str] = None
-    
-    # Reemplazado validator por field_validator
-    @field_validator('status')
-    def validate_status(cls, v):
-        if v is not None:
-            valid_statuses = ["pending", "approved", "received", "cancelled"]
-            if v not in valid_statuses:
-                raise ValueError(f"Status must be one of {valid_statuses}")
-        return v
+    """Esquema para actualizar orden de compra"""
+    supplier_id: Optional[int] = Field(None, description="ID del proveedor")
+    expected_delivery_date: Optional[datetime] = Field(None, description="Fecha esperada de entrega")
+    payment_terms: Optional[str] = Field(None, max_length=100, description="Términos de pago")
+    shipping_method: Optional[str] = Field(None, max_length=100, description="Método de envío")
+    notes: Optional[str] = Field(None, description="Notas de la orden")
+    status: Optional[str] = Field(None, description="Estado de la orden")
 
 class PurchaseOrder(PurchaseOrderBase):
+    """Esquema completo de orden de compra"""
     id: int
     order_number: str
+    supplier_name: Optional[str] = None
     order_date: datetime
     status: str
     total_amount: float
-    supplier_name: Optional[str] = None
-    items: List[PurchaseOrderItem]
     created_at: datetime
     updated_at: Optional[datetime] = None
+    items: List[PurchaseOrderItemResponse] = []
     
-    class Config:
-        from_attributes = True  # Reemplazado orm_mode por from_attributes
+    model_config = ConfigDict(from_attributes=True)
 
-# Esquemas para recepción de mercancía
 class ReceiptItemBase(BaseModel):
-    product_id: int
-    quantity_received: int = Field(..., ge=0)
-    quantity_rejected: Optional[int] = Field(0, ge=0)
-    rejection_reason: Optional[str] = None
+    """Esquema base para item de recepción"""
+    product_id: int = Field(..., description="ID del producto")
+    quantity_received: int = Field(..., ge=0, description="Cantidad recibida")
+    quantity_rejected: Optional[int] = Field(0, ge=0, description="Cantidad rechazada")
+    rejection_reason: Optional[str] = Field(None, description="Razón del rechazo")
 
-class ReceiptCreate(BaseModel):
-    items: List[ReceiptItemBase]
-    notes: Optional[str] = None
-    received_by: Optional[int] = None
+class ReceiptItemCreate(ReceiptItemBase):
+    """Esquema para crear item de recepción"""
+    pass
 
-class ReceiptItem(ReceiptItemBase):
+class ReceiptItemResponse(ReceiptItemBase):
+    """Esquema para respuesta de item de recepción"""
     id: int
     product_name: Optional[str] = None
     
-    class Config:
-        from_attributes = True  # Reemplazado orm_mode por from_attributes
+    model_config = ConfigDict(from_attributes=True)
+
+class ReceiptCreate(BaseModel):
+    """Esquema para crear recepción"""
+    received_by: Optional[int] = Field(None, description="ID del usuario que recibe")
+    notes: Optional[str] = Field(None, description="Notas de la recepción")
+    items: List[ReceiptItemCreate] = Field(..., min_length=1, description="Items recibidos")
 
 class Receipt(BaseModel):
+    """Esquema completo de recepción"""
     id: int
     purchase_order_id: int
     receipt_date: datetime
     received_by: Optional[int] = None
     status: str
     notes: Optional[str] = None
-    items: List[ReceiptItem]
+    items: List[ReceiptItemResponse] = []
     
-    class Config:
-        from_attributes = True  # Reemplazado orm_mode por from_attributes
+    model_config = ConfigDict(from_attributes=True)

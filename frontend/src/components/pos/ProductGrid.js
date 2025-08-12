@@ -12,7 +12,7 @@ import {
   Stack,
   useTheme
 } from '@mui/material';
-import Grid from '@mui/material/Unstable_Grid2'; // Grid v2
+import { Grid } from '@mui/material'; // Usando Grid estable
 import AddShoppingCartIcon from '@mui/icons-material/AddShoppingCart';
 import { styled } from '@mui/material/styles';
 import { addItem } from '../../features/pos/cartSlice';

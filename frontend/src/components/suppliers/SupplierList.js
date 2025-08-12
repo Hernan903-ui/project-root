@@ -42,7 +42,6 @@ import {
 import { isInOfflineMode } from '../../api/axios';
 
 // Constantes
-const DEFAULT_AVATAR_FALLBACK = null; // No usamos imagen por defecto para evitar 404
 
 // Componente para mostrar los skeletons durante la carga
 const TableRowSkeleton = memo(() => (

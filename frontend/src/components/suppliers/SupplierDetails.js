@@ -1,85 +1,59 @@
-import React from 'react';
+"use client"
+import { Box, Typography, Paper, Grid, Chip, Divider, Button, Card, CardContent } from "@mui/material"
 import {
-  Box,
-  Paper,
-  Typography,
-  Grid,
-  Divider,
-  Chip,
-  Button,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemIcon,
-  Card,
-  CardContent,
-  CardHeader,
-  IconButton,
-  Tooltip
-} from '@mui/material';
-import {
-  Phone as PhoneIcon,
   Email as EmailIcon,
-  Language as WebsiteIcon,
+  Phone as PhoneIcon,
   LocationOn as LocationIcon,
-  Edit as EditIcon,
-  ShoppingCart as OrderIcon,
+  Person as PersonIcon,
   Business as BusinessIcon,
-  Receipt as ReceiptIcon,
-  Event as EventIcon,
-  Notes as NotesIcon
-} from '@mui/icons-material';
-import { useNavigate } from 'react-router-dom';
+  Add as AddIcon,
+} from "@mui/icons-material"
 
-const SupplierDetails = ({ supplier, onCreateOrder }) => {
-  const navigate = useNavigate();
-
+const SupplierDetails = ({ supplier, onCreateOrder, onEdit, onDelete }) => {
   if (!supplier) {
     return (
-      <Paper sx={{ p: 3 }}>
-        <Typography>No se encontró información del proveedor</Typography>
-      </Paper>
-    );
+      <Typography variant="body1" color="text.secondary">
+        No se encontraron datos del proveedor
+      </Typography>
+    )
   }
+
+  const InfoItem = ({ icon, label, value }) => (
+    <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
+      <Box sx={{ mr: 2, color: "primary.main" }}>{icon}</Box>
+      <Box>
+        <Typography variant="body2" color="text.secondary">
+          {label}
+        </Typography>
+        <Typography variant="body1">{value || "No especificado"}</Typography>
+      </Box>
+    </Box>
+  )
 
   return (
     <Box>
-      <Paper sx={{ p: 3, mb: 3 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+      <Paper elevation={2} sx={{ p: 3, mb: 3 }}>
+        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", mb: 3 }}>
           <Box>
-            <Typography variant="h5" gutterBottom>{supplier.name}</Typography>
-            <Chip 
-              label={supplier.active ? 'Activo' : 'Inactivo'} 
-              color={supplier.active ? 'success' : 'default'}
-              size="small"
-              sx={{ mr: 1 }}
-            />
-            <Chip 
-              label={supplier.category || 'General'} 
-              color="primary" 
+            <Typography variant="h4" gutterBottom>
+              {supplier.name}
+            </Typography>
+            <Chip
+              label={supplier.status === "active" ? "Activo" : "Inactivo"}
+              color={supplier.status === "active" ? "success" : "default"}
               variant="outlined"
-              size="small"
             />
           </Box>
-          <Box>
-            <Tooltip title="Editar proveedor">
-              <IconButton 
-                color="primary" 
-                onClick={() => navigate(`/suppliers/edit/${supplier.id}`)}
-                sx={{ mr: 1 }}
-              >
-                <EditIcon />
-              </IconButton>
-            </Tooltip>
+          {onCreateOrder && (
             <Button
               variant="contained"
-              color="primary"
-              startIcon={<OrderIcon />}
+              startIcon={<AddIcon />}
               onClick={() => onCreateOrder(supplier.id)}
+              sx={{ ml: 2 }}
             >
               Nueva Orden
             </Button>
-          </Box>
+          )}
         </Box>
 
         <Divider sx={{ mb: 3 }} />
@@ -87,133 +61,52 @@ const SupplierDetails = ({ supplier, onCreateOrder }) => {
         <Grid container spacing={3}>
           <Grid item xs={12} md={6}>
             <Card variant="outlined">
-              <CardHeader title="Información de Contacto" />
               <CardContent>
-                <List dense>
-                  <ListItem>
-                    <ListItemIcon>
-                      <BusinessIcon />
-                    </ListItemIcon>
-                    <ListItemText
-                      primary="Contacto"
-                      secondary={supplier.contactName}
-                    />
-                  </ListItem>
-                  <ListItem>
-                    <ListItemIcon>
-                      <EmailIcon />
-                    </ListItemIcon>
-                    <ListItemText
-                      primary="Email"
-                      secondary={supplier.email}
-                    />
-                  </ListItem>
-                  <ListItem>
-                    <ListItemIcon>
-                      <PhoneIcon />
-                    </ListItemIcon>
-                    <ListItemText
-                      primary="Teléfono"
-                      secondary={supplier.phone}
-                    />
-                  </ListItem>
-                  {supplier.website && (
-                    <ListItem>
-                      <ListItemIcon>
-                        <WebsiteIcon />
-                      </ListItemIcon>
-                      <ListItemText
-                        primary="Sitio Web"
-                        secondary={supplier.website}
-                      />
-                    </ListItem>
-                  )}
-                </List>
+                <Typography variant="h6" gutterBottom color="primary">
+                  Información de Contacto
+                </Typography>
+
+                <InfoItem icon={<PersonIcon />} label="Persona de Contacto" value={supplier.contact_person} />
+
+                <InfoItem icon={<EmailIcon />} label="Email" value={supplier.email} />
+
+                <InfoItem icon={<PhoneIcon />} label="Teléfono" value={supplier.phone} />
               </CardContent>
             </Card>
           </Grid>
 
           <Grid item xs={12} md={6}>
             <Card variant="outlined">
-              <CardHeader title="Dirección" />
               <CardContent>
-                <List dense>
-                  <ListItem>
-                    <ListItemIcon>
-                      <LocationIcon />
-                    </ListItemIcon>
-                    <ListItemText
-                      primary="Dirección"
-                      secondary={supplier.address}
-                    />
-                  </ListItem>
-                  <ListItem>
-                    <ListItemText
-                      primary="Ciudad / Estado / CP"
-                      secondary={`${supplier.city || ''} ${supplier.state || ''} ${supplier.postalCode || ''}`}
-                    />
-                  </ListItem>
-                  <ListItem>
-                    <ListItemText
-                      primary="País"
-                      secondary={supplier.country}
-                    />
-                  </ListItem>
-                </List>
-              </CardContent>
-            </Card>
-          </Grid>
+                <Typography variant="h6" gutterBottom color="primary">
+                  Dirección
+                </Typography>
 
-          <Grid item xs={12} md={6}>
-            <Card variant="outlined">
-              <CardHeader title="Información Fiscal" />
-              <CardContent>
-                <List dense>
-                  <ListItem>
-                    <ListItemIcon>
-                      <ReceiptIcon />
-                    </ListItemIcon>
-                    <ListItemText
-                      primary="Identificación Fiscal"
-                      secondary={supplier.taxId || 'No especificado'}
-                    />
-                  </ListItem>
-                  <ListItem>
-                    <ListItemIcon>
-                      <EventIcon />
-                    </ListItemIcon>
-                    <ListItemText
-                      primary="Términos de Pago"
-                      secondary={supplier.paymentTerms || 'No especificado'}
-                    />
-                  </ListItem>
-                </List>
-              </CardContent>
-            </Card>
-          </Grid>
+                <InfoItem icon={<LocationIcon />} label="Dirección" value={supplier.address} />
 
-          <Grid item xs={12} md={6}>
-            <Card variant="outlined">
-              <CardHeader title="Notas" />
-              <CardContent>
-                <List dense>
-                  <ListItem>
-                    <ListItemIcon>
-                      <NotesIcon />
-                    </ListItemIcon>
-                    <ListItemText
-                      primary="Información Adicional"
-                      secondary={supplier.notes || 'Sin notas'}
-                    />
-                  </ListItem>
-                </List>
+                <InfoItem icon={<BusinessIcon />} label="Ciudad" value={supplier.city} />
+
+                <InfoItem icon={<LocationIcon />} label="País" value={supplier.country} />
               </CardContent>
             </Card>
           </Grid>
         </Grid>
+
+        {supplier.created_at && (
+          <Box sx={{ mt: 3, pt: 2, borderTop: 1, borderColor: "divider" }}>
+            <Typography variant="body2" color="text.secondary">
+              Creado el:{" "}
+              {new Date(supplier.created_at).toLocaleDateString("es-ES", {
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+              })}
+            </Typography>
+          </Box>
+        )}
       </Paper>
     </Box>
-  );
-};
+  )
+}
 
-export default SupplierDetails;
+export default SupplierDetails

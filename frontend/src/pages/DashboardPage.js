@@ -26,8 +26,8 @@ const DashboardPage = () => {
     data: salesData,
     isLoading: isLoadingSales,
     error: salesError
-  } = useQuery({ 
-    queryKey: ['dashboardStats'], 
+  } = useQuery({
+    queryKey: ['dashboardStats'],
     queryFn: getDashboardStats,
     staleTime: 5 * 60 * 1000, // 5 minutos
   });
@@ -37,10 +37,10 @@ const DashboardPage = () => {
     data: topProducts,
     isLoading: isLoadingTopProducts,
     error: topProductsError
-  } = useQuery({ 
-    queryKey: ['topProducts'], 
+  } = useQuery({
+    queryKey: ['topProducts'],
     queryFn: () => getTopSellingProducts(10),
-    staleTime: 10 * 60 * 1000, // 10 minutos 
+    staleTime: 10 * 60 * 1000, // 10 minutos
   });
 
   // Cargar productos con bajo stock
@@ -48,8 +48,8 @@ const DashboardPage = () => {
     data: lowStockProducts,
     isLoading: isLoadingLowStock,
     error: lowStockError
-  } = useQuery({ 
-    queryKey: ['lowStockProducts'], 
+  } = useQuery({
+    queryKey: ['lowStockProducts'],
     queryFn: getLowStockProducts,
     staleTime: 5 * 60 * 1000, // 5 minutos
   });
@@ -59,8 +59,8 @@ const DashboardPage = () => {
     data: inventoryValue,
     isLoading: isLoadingInventory,
     error: inventoryError
-  } = useQuery({ 
-    queryKey: ['inventoryValue'], 
+  } = useQuery({
+    queryKey: ['inventoryValue'],
     queryFn: getInventoryValue,
     staleTime: 15 * 60 * 1000, // 15 minutos
   });
@@ -103,10 +103,17 @@ const DashboardPage = () => {
   const hasErrors = salesError || topProductsError || lowStockError || inventoryError;
   if (hasErrors) {
     const error = salesError || topProductsError || lowStockError || inventoryError;
-    const errorMessage = typeof error === 'object' 
-      ? (error?.detail || error?.message || 'Error cargando datos del dashboard.') 
-      : error || 'Error cargando datos del dashboard.';
-      
+    let errorMessage;
+
+    if (typeof error === 'object') {
+      // Prioritize detail or message, otherwise stringify the whole object
+      errorMessage = error?.detail || error?.message || JSON.stringify(error);
+    } else {
+      // If it's not an object, use the error directly or a default message
+      errorMessage = error || 'Error cargando datos del dashboard.';
+    }
+
+
     return (
       <Alert severity="error" variant="filled" sx={{ mt: 2, mb: 2 }}>
         {errorMessage}
@@ -120,8 +127,9 @@ const DashboardPage = () => {
         Dashboard
       </Typography>
 
-      {/* Cards de estadísticas */}
-      <Grid container spacing={3} sx={{ mb: 3 }}>
+      {/* Cards de estadísticas - Asegúrate de que este Grid tiene la prop columns */}
+      {/* También remueve la prop 'item' de GridItem si aún la tiene */}
+      <Grid container spacing={3} sx={{ mb: 3 }} columns={{ xs: 4, sm: 8, md: 12 }}>
         <GridItem xs={12} sm={6} md={3}>
           <StatCard
             title="Ventas Totales"
@@ -160,14 +168,15 @@ const DashboardPage = () => {
         </GridItem>
       </Grid>
 
-      {/* Gráfico y accesos rápidos */}
-      <Grid container spacing={3} sx={{ mb: 3 }}>
+      {/* Gráfico y accesos rápidos - Asegúrate de que este Grid tiene la prop columns */}
+      {/* También remueve la prop 'item' de GridItem si aún la tiene */}
+      <Grid container spacing={3} sx={{ mb: 3 }} columns={{ xs: 4, md: 12 }}>
         <GridItem xs={12} md={8}>
           {isLoadingSales ? (
-            <Box sx={{ 
-              display: 'flex', 
-              justifyContent: 'center', 
-              p: 5, 
+            <Box sx={{
+              display: 'flex',
+              justifyContent: 'center',
+              p: 5,
               height: '100%',
               minHeight: 300,
               alignItems: 'center',
@@ -190,13 +199,14 @@ const DashboardPage = () => {
         </GridItem>
       </Grid>
 
-      {/* Productos con bajo stock y más vendidos */}
-      <Grid container spacing={3}>
+      {/* Productos con bajo stock y más vendidos - Asegúrate de que este Grid tiene la prop columns */}
+      {/* También remueve la prop 'item' de GridItem si aún la tiene */}
+      <Grid container spacing={3} columns={{ xs: 4, md: 12 }}>
         <GridItem xs={12} md={6}>
           {isLoadingLowStock ? (
-            <Box sx={{ 
-              display: 'flex', 
-              justifyContent: 'center', 
+            <Box sx={{
+              display: 'flex',
+              justifyContent: 'center',
               p: 5,
               minHeight: 300,
               alignItems: 'center',
@@ -212,9 +222,9 @@ const DashboardPage = () => {
         </GridItem>
         <GridItem xs={12} md={6}>
           {isLoadingTopProducts ? (
-            <Box sx={{ 
-              display: 'flex', 
-              justifyContent: 'center', 
+            <Box sx={{
+              display: 'flex',
+              justifyContent: 'center',
               p: 5,
               minHeight: 300,
               alignItems: 'center',

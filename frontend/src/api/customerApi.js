@@ -1,12 +1,13 @@
 import axiosInstance, { isInOfflineMode } from './axios';
 
 // Función para transformar los clientes y asegurar compatibilidad
+// This function is now potentially used within the API calls if needed
 const transformCustomer = (customer) => {
   if (!customer) return null;
-  
+
   // Si el cliente ya tiene una propiedad name, devolverlo sin cambios
   if (customer.name) return customer;
-  
+
   // Si no tiene name pero tiene firstName y/o lastName, crear la propiedad name
   if (customer.firstName || customer.lastName) {
     return {
@@ -14,7 +15,7 @@ const transformCustomer = (customer) => {
       name: `${customer.firstName || ''} ${customer.lastName || ''}`.trim()
     };
   }
-  
+
   return customer;
 };
 
@@ -86,9 +87,9 @@ const MOCK_CUSTOMER_STATS = {
 // Registrar información sobre el uso de datos de respaldo
 const logFallbackUsage = (message) => {
   console.warn(`[FALLBACK DATA] ${message}`);
-  
+
   // Opcionalmente podrías enviar esta información a un servicio de analytics
-  if (window.dataLayer) {
+  if (typeof window !== 'undefined' && window.dataLayer) {
     window.dataLayer.push({
       event: 'fallback_data_used',
       fallback_message: message
@@ -101,21 +102,24 @@ export const getCustomers = async () => {
   // Si ya estamos en modo offline, usar datos de respaldo directamente
   if (isInOfflineMode()) {
     logFallbackUsage('Modo offline activo, usando datos de respaldo para clientes');
-    return MOCK_CUSTOMERS; // Devolver directamente el array
+    // Aplicar transformación a datos mock si es necesario
+    return MOCK_CUSTOMERS.map(transformCustomer); // Aplicamos transformCustomer aquí
   }
 
   try {
     const response = await axiosInstance.get('/customers');
-    return response.data; // Devolver los datos dentro de la respuesta
+    // Aplicar transformación a datos recibidos del backend
+    return response.data.map(transformCustomer); // Aplicamos transformCustomer aquí
   } catch (error) {
     console.error('Error al obtener clientes:', error.message);
-    
+
     // Si es un error de red o timeout, devolver datos de respaldo
     if (error.code === 'ECONNABORTED' || !error.response || error.isOfflineError) {
       logFallbackUsage('Usando datos de respaldo para clientes debido a problemas de conexión');
-      return MOCK_CUSTOMERS; // Devolver directamente el array
+       // Aplicar transformación a datos mock si es necesario
+      return MOCK_CUSTOMERS.map(transformCustomer); // Aplicamos transformCustomer aquí
     }
-    
+
     throw error;
   }
 };
@@ -125,21 +129,26 @@ export const getCustomerById = async (id) => {
   // Si ya estamos en modo offline, usar datos de respaldo directamente
   if (isInOfflineMode()) {
     logFallbackUsage(`Modo offline activo, usando datos de respaldo para cliente #${id}`);
-    return MOCK_CUSTOMERS.find(c => c.id === Number(id)) || MOCK_CUSTOMERS[0];
+    const customer = MOCK_CUSTOMERS.find(c => c.id === Number(id)) || MOCK_CUSTOMERS[0];
+    // Aplicar transformación a datos mock
+    return transformCustomer(customer); // Aplicamos transformCustomer aquí
   }
 
   try {
     const response = await axiosInstance.get(`/customers/${id}`);
-    return response.data;
+     // Aplicar transformación a datos recibidos del backend
+    return transformCustomer(response.data); // Aplicamos transformCustomer aquí
   } catch (error) {
     console.error(`Error al obtener cliente #${id}:`, error.message);
-    
+
     // Si es un error de red o timeout, devolver datos de respaldo
     if (error.code === 'ECONNABORTED' || !error.response || error.isOfflineError) {
       logFallbackUsage(`Usando datos de respaldo para cliente #${id} debido a problemas de conexión`);
-      return MOCK_CUSTOMERS.find(c => c.id === Number(id)) || MOCK_CUSTOMERS[0];
+      const customer = MOCK_CUSTOMERS.find(c => c.id === Number(id)) || MOCK_CUSTOMERS[0];
+      // Aplicar transformación a datos mock
+      return transformCustomer(customer); // Aplicamos transformCustomer aquí
     }
-    
+
     throw error;
   }
 };
@@ -205,13 +214,13 @@ export const getCustomerPurchaseHistory = async (id) => {
     return response.data;
   } catch (error) {
     console.error(`Error al obtener historial de compras del cliente #${id}:`, error.message);
-    
+
     // Si es un error de red o timeout, devolver datos de respaldo
     if (error.code === 'ECONNABORTED' || !error.response || error.isOfflineError) {
       logFallbackUsage(`Usando datos de respaldo para historial de compras del cliente #${id} debido a problemas de conexión`);
       return MOCK_PURCHASE_HISTORY.filter(h => h.customerId === Number(id));
     }
-    
+
     throw error;
   }
 };
@@ -223,35 +232,38 @@ export const searchCustomers = async (filters) => {
     logFallbackUsage('Modo offline activo, usando datos de respaldo para búsqueda de clientes');
     // Lógica básica para filtrar los datos mock según los filtros
     let filteredCustomers = [...MOCK_CUSTOMERS];
-    
+
     if (filters.search) {
       const searchLower = filters.search.toLowerCase();
-      filteredCustomers = filteredCustomers.filter(c => 
-        c.firstName.toLowerCase().includes(searchLower) || 
-        c.lastName.toLowerCase().includes(searchLower) || 
+      filteredCustomers = filteredCustomers.filter(c =>
+        c.firstName.toLowerCase().includes(searchLower) ||
+        c.lastName.toLowerCase().includes(searchLower) ||
         c.email.toLowerCase().includes(searchLower)
       );
     }
-    
+
     if (filters.status) {
       filteredCustomers = filteredCustomers.filter(c => c.status === filters.status);
     }
-    
-    return filteredCustomers;
+
+    // Aplicar transformación a los resultados filtrados del mock
+    return filteredCustomers.map(transformCustomer); // Aplicamos transformCustomer aquí
   }
 
   try {
     const response = await axiosInstance.get('/customers/search', { params: filters });
-    return response.data;
+     // Aplicar transformación a datos recibidos del backend
+    return response.data.map(transformCustomer); // Aplicamos transformCustomer aquí
   } catch (error) {
     console.error('Error al buscar clientes:', error.message);
-    
+
     // Si es un error de red o timeout, devolver datos de respaldo
     if (error.code === 'ECONNABORTED' || !error.response || error.isOfflineError) {
       logFallbackUsage('Usando datos de respaldo para búsqueda de clientes debido a problemas de conexión');
-      return MOCK_CUSTOMERS;
+       // Aplicar transformación a los datos mock como fallback
+      return MOCK_CUSTOMERS.map(transformCustomer); // Aplicamos transformCustomer aquí
     }
-    
+
     throw error;
   }
 };
@@ -261,26 +273,30 @@ export const getCustomerStats = async () => {
   // Si ya estamos en modo offline, usar datos de respaldo directamente
   if (isInOfflineMode()) {
     logFallbackUsage('Modo offline activo, usando datos de respaldo para estadísticas de clientes');
+    // No es necesario transformar las estadísticas a menos que 'transformCustomer' sea aplicable
     return MOCK_CUSTOMER_STATS;
   }
 
   try {
     const response = await axiosInstance.get('/customers/statistics');
+    // No es necesario transformar las estadísticas a menos que 'transformCustomer' sea aplicable
     return response.data;
   } catch (error) {
     console.error('Error al obtener estadísticas de clientes:', error.message);
-    
+
     // Si es un error de red o timeout, devolver datos de respaldo
     if (error.code === 'ECONNABORTED' || !error.response || error.isOfflineError) {
       logFallbackUsage('Usando datos de respaldo para estadísticas de clientes debido a problemas de conexión');
+      // No es necesario transformar las estadísticas a menos que 'transformCustomer' sea aplicable
       return MOCK_CUSTOMER_STATS;
     }
-    
+
     throw error;
   }
 };
 
-export default {
+// Asignamos el objeto de exportación a una variable para evitar el warning de exportación anónima
+const customerApi = {
   getCustomers,
   getCustomerById,
   createCustomer,
@@ -290,3 +306,5 @@ export default {
   searchCustomers,
   getCustomerStats
 };
+
+export default customerApi;

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, Link } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { 
   Box, 
@@ -10,7 +10,9 @@ import {
   DialogActions,
   DialogContent,
   DialogContentText,
-  DialogTitle
+  DialogTitle,
+  Paper,
+  Breadcrumbs
 } from '@mui/material';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import SupplierDetails from '../components/suppliers/SupplierDetails';
@@ -20,7 +22,7 @@ import {
   clearCurrentSupplier 
 } from '../features/suppliers/suppliersSlice';
 import AlertMessage from '../components/common/AlertMessage';
-import { ArrowBack } from '@mui/icons-material';
+import { ArrowBack, Home as HomeIcon, Business as BusinessIcon } from '@mui/icons-material';
 
 const SupplierDetailsPage = () => {
   const { id } = useParams();
@@ -97,15 +99,42 @@ const SupplierDetailsPage = () => {
   return (
     <DashboardLayout>
       <Box sx={{ p: 3 }}>
-        <Box sx={{ mb: 3 }}>
-          <Button
-            startIcon={<ArrowBack />}
-            onClick={() => navigate('/suppliers')}
-            sx={{ mb: 2 }}
-          >
-            Volver a Proveedores
-          </Button>
-          
+        <Paper elevation={0} sx={{ p: 2, mb: 3 }}>
+          <Breadcrumbs aria-label="breadcrumb" sx={{ mb: 2 }}>
+            <Link to="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none', color: 'inherit' }}>
+              <HomeIcon sx={{ mr: 0.5 }} fontSize="inherit" />
+              Inicio
+            </Link>
+            <Link to="/suppliers" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none', color: 'inherit' }}>
+              <BusinessIcon sx={{ mr: 0.5 }} fontSize="inherit" />
+              Proveedores
+            </Link>
+            <Typography color="text.primary" sx={{ display: 'flex', alignItems: 'center' }}>
+              {currentSupplier?.name || 'Detalles del Proveedor'}
+            </Typography>
+          </Breadcrumbs>
+
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              <Button
+                startIcon={<ArrowBack />}
+                onClick={() => navigate('/suppliers')}
+                sx={{ mr: 2 }}
+              >
+                Volver a Proveedores
+              </Button>
+              <Typography variant="h4">
+                {currentSupplier?.name || 'Detalles del Proveedor'}
+              </Typography>
+            </Box>
+          </Box>
+        </Paper>
+        
+        </Box>
+        <Paper elevation={0} sx={{ p: 2, mb: 3 }}></Paper>
+        <Box sx={{ p: 2 }}>
+          <Box>
+
           <SupplierDetails 
             supplier={currentSupplier} 
             onCreateOrder={handleCreateOrder}

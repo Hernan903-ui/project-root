@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, Link } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { Box, Typography, Button, CircularProgress } from '@mui/material';
+import { Box, Typography, Button, CircularProgress, Paper, Breadcrumbs } from '@mui/material';
+import DashboardLayout from '../components/layout/DashboardLayout';
 import PurchaseOrderForm from '../components/suppliers/PurchaseOrderForm';
 import { fetchPurchaseOrderById, updatePurchaseOrder, clearCurrentPurchaseOrder } from '../features/suppliers/suppliersSlice';
 import AlertMessage from '../components/common/AlertMessage';
-import { ArrowBack } from '@mui/icons-material';
+import { ArrowBack, Home as HomeIcon, ShoppingCart as ShoppingCartIcon, Edit as EditIcon } from '@mui/icons-material';
 
 const EditPurchaseOrderPage = () => {
   const { id } = useParams();
@@ -46,59 +47,89 @@ const EditPurchaseOrderPage = () => {
 
   if (loading && !currentPurchaseOrder) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '70vh' }}>
-        <CircularProgress />
-      </Box>
+      <DashboardLayout>
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '70vh' }}>
+          <CircularProgress />
+        </Box>
+      </DashboardLayout>
     );
   }
 
   if (!loading && !currentPurchaseOrder && !error) {
     return (
-      <Box sx={{ p: 3 }}>
-        <Typography variant="h5" color="error">
-          Orden de compra no encontrada
-        </Typography>
-        <Button 
-          variant="contained" 
-          onClick={() => navigate('/purchase-orders')}
-          sx={{ mt: 2 }}
-        >
-          Volver a Órdenes de Compra
-        </Button>
-      </Box>
+      <DashboardLayout>
+        <Box sx={{ p: 3 }}>
+          <Typography variant="h5" color="error">
+            Orden de compra no encontrada
+          </Typography>
+          <Button 
+            variant="contained" 
+            onClick={() => navigate('/purchase-orders')}
+            sx={{ mt: 2 }}
+          >
+            Volver a Órdenes de Compra
+          </Button>
+        </Box>
+      </DashboardLayout>
     );
   }
 
   return (
-    <Box sx={{ p: 3 }}>
-      <Box sx={{ mb: 3, display: 'flex', alignItems: 'center' }}>
-        <Button
-          startIcon={<ArrowBack />}
-          onClick={() => navigate(`/purchase-orders/${id}`)}
-          sx={{ mr: 2 }}
-        >
-          Volver
-        </Button>
-        <Typography variant="h4">
-          Editar Orden de Compra #{id}
-        </Typography>
+    <DashboardLayout>
+      <Box sx={{ p: 3 }}>
+        <Paper elevation={0} sx={{ p: 2, mb: 3 }}>
+          <Breadcrumbs aria-label="breadcrumb" sx={{ mb: 2 }}>
+            <Link to="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none', color: 'inherit' }}>
+              <HomeIcon sx={{ mr: 0.5 }} fontSize="inherit" />
+              Inicio
+            </Link>
+            <Link to="/purchase-orders" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none', color: 'inherit' }}>
+              <ShoppingCartIcon sx={{ mr: 0.5 }} fontSize="inherit" />
+              Órdenes de Compra
+            </Link>
+            <Link to={`/purchase-orders/${id}`} style={{ display: 'flex', alignItems: 'center', textDecoration: 'none', color: 'inherit' }}>
+              Orden #{id}
+            </Link>
+            <Typography color="text.primary" sx={{ display: 'flex', alignItems: 'center' }}>
+              <EditIcon sx={{ mr: 0.5 }} fontSize="inherit" />
+              Editar
+            </Typography>
+          </Breadcrumbs>
+
+          <Box sx={{ mb: 3, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              <Button
+                startIcon={<ArrowBack />}
+                onClick={() => navigate(`/purchase-orders/${id}`)}
+                sx={{ mr: 2 }}
+              >
+                Volver
+              </Button>
+              <Typography variant="h4">
+                Editar Orden de Compra #{id}
+              </Typography>
+            </Box>
+          </Box>
+        </Paper>
+
+        <Paper elevation={1} sx={{ p: 3, mb: 3 }}>
+          <PurchaseOrderForm 
+            initialData={currentPurchaseOrder}
+            onSubmit={handleSubmit}
+            loading={loading}
+            error={error}
+            onCancel={() => navigate(`/purchase-orders/${id}`)}
+          />
+        </Paper>
+
+        <AlertMessage 
+          open={alert.open}
+          message={alert.message}
+          severity={alert.severity}
+          onClose={() => setAlert({ ...alert, open: false })}
+        />
       </Box>
-
-      <PurchaseOrderForm 
-        initialData={currentPurchaseOrder}
-        onSubmit={handleSubmit}
-        loading={loading}
-        error={error}
-        onCancel={() => navigate(`/purchase-orders/${id}`)}
-      />
-
-      <AlertMessage 
-        open={alert.open}
-        message={alert.message}
-        severity={alert.severity}
-        onClose={() => setAlert({ ...alert, open: false })}
-      />
-    </Box>
+    </DashboardLayout>
   );
 };
 

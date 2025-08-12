@@ -14,9 +14,8 @@ import {
   Typography,
   Box,
   CircularProgress,
-  Divider,
 } from '@mui/material';
-import { useQuery } from 'react-query';
+import { useQuery } from '@tanstack/react-query';
 import SearchIcon from '@mui/icons-material/Search';
 import PersonIcon from '@mui/icons-material/Person';
 import { getCustomers } from '../../api/posApi';
@@ -27,13 +26,11 @@ const CustomerSelect = ({ open, onClose }) => {
   const currentCustomer = useSelector(selectCartCustomer);
   const [searchTerm, setSearchTerm] = useState('');
 
-  const { data: customers, isLoading, refetch } = useQuery(
-    ['customers', searchTerm],
-    () => getCustomers(searchTerm),
-    {
-      enabled: open,
-    }
-  );
+  const { data: customers, isLoading, refetch } = useQuery({
+    queryKey: ['customers', searchTerm],
+    queryFn: () => getCustomers(searchTerm),
+    enabled: open
+  });
 
   const handleSearch = (e) => {
     setSearchTerm(e.target.value);

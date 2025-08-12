@@ -178,7 +178,7 @@ export const createCategory = async (categoryData) => {
   }
 };
 
-export default {
+const productApi = {
   getProducts,
   getProductById,
   createProduct,
@@ -187,3 +187,5 @@ export default {
   getCategories,
   createCategory
 };
+
+export default productApi;

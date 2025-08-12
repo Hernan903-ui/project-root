@@ -13,6 +13,8 @@ from app.middleware.rate_limiter import rate_limiting_middleware
 from app.config import settings
 from app.scheduled_tasks import start_scheduler
 from app.api.routes import users
+from app.api.routes.suppliers import router as suppliers_router
+from app.api.routes.purchase_orders import router as purchase_orders_router
 
 # Configurar logging
 logging.basicConfig(
@@ -92,6 +94,7 @@ async def global_exception_handler(request: Request, exc: Exception):
 
 # Incluir todos los routers bajo el prefijo /api
 app.include_router(api_router, prefix="/api")
+app.include_router(purchase_orders_router, prefix="/api/purchase-orders")
 
 # ÚNICO evento de startup
 @app.on_event("startup")

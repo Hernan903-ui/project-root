@@ -431,7 +431,7 @@ export const diagnoseRegistration = async (email) => {
     // Verificar si el email ya está registrado
     const checkData = { email };
     try {
-      const response = await axiosInstance.post('/auth/check-email', checkData);
+      await axiosInstance.post('/auth/check-email', checkData);
       return {
         status: 'available',
         message: 'El email está disponible para registro'
@@ -458,14 +458,12 @@ export const diagnoseRegistration = async (email) => {
 };
 
 // Exportamos tanto individualmente (para import nombrado) como objeto completo
-export default {
+const userApi = {
   // Registro público
   register,
-  
   // Diagnóstico
   checkServerStatus,
   diagnoseRegistration,
-  
   // Perfil
   getUserProfile,
   updateUserProfile,
@@ -473,7 +471,6 @@ export default {
   updateUserPreferences,
   getUserActivityHistory,
   updateProfileImage,
-  
   // Gestión de usuarios
   getUsers,
   getUserById,
@@ -483,3 +480,5 @@ export default {
   setUserStatus,
   assignUserRole
 };
+
+export default userApi;

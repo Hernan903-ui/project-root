@@ -4,7 +4,7 @@ from typing import Dict, List, Tuple
 import asyncio
 import os
 
-ENABLE_RATE_LIMITING = os.getenv("ENABLE_RATE_LIMITING", "false").lower() == "true"
+ENABLE_RATE_LIMITING = False  # Desactivado para desarrollo
 
 async def rate_limiting_middleware(request: Request, call_next):
     """Middleware para implementar rate limiting."""
@@ -49,10 +49,12 @@ rate_limiter = RateLimiter()  # Ahora usa los nuevos valores por defecto: 100 ll
 
 async def rate_limiting_middleware(request: Request, call_next):
     """Middleware para implementar rate limiting."""
+    # Saltar completamente el rate limiting en entorno de desarrollo
+    if not ENABLE_RATE_LIMITING:
+        return await call_next(request)
     # Excluir rutas específicas del rate limiting, como la documentación
     if request.url.path.startswith(("/docs", "/redoc", "/openapi.json")):
         return await call_next(request)
-    
     # Verificar rate limiting
     is_limited = await rate_limiter.is_rate_limited(request)
     if is_limited:
@@ -60,6 +62,5 @@ async def rate_limiting_middleware(request: Request, call_next):
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
             detail="Too many requests. Please try again later."
         )
-    
     # Procesar la solicitud normalmente
     return await call_next(request)
